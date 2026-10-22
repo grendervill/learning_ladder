@@ -174,6 +174,70 @@ function makeGeneralApp(grade = 4) {
   }
 }
 
+const mathCourse: CourseSnapshot = {
+  version: "test",
+  courses: [
+    {
+      ...DEFAULT_COURSE_META,
+      id: "math",
+      title: "Математика",
+      description: "Интегралы по шагам",
+      theme: "ocean",
+      icon: "atom",
+      mode: "math",
+      builtIn: false,
+      createdAt: "2026-10-22T00:00:00.000Z",
+    },
+  ],
+  chapters: [
+    {
+      id: "math-c1",
+      courseId: "math",
+      title: "Интегрирование",
+      description: "",
+      lessonIds: ["math-1"],
+      quiz: null,
+      errors: [],
+    },
+  ],
+  lessons: {
+    "math-1": {
+      ...lesson("math-1"),
+      courseId: "math",
+      tasks: [
+        {
+          id: "math-1-task-1",
+          title: "Вычислить интеграл",
+          prompt: "Решите интеграл по шагам.",
+          kind: "steps",
+          entry: "solution.json",
+          files: [{ name: "solution.json", content: '{"steps":[],"answer":""}' }],
+          args: [],
+          stdin: "",
+          timeoutMs: 3000,
+          criteria: ["верный ход", "верный ответ"],
+        },
+      ],
+    },
+  },
+  unassigned: [],
+  errors: [],
+}
+
+function makeMathApp(grade = 4, mentorOverride?: MentorService) {
+  const db = openDatabase(":memory:")
+  migrate(db)
+  return {
+    db,
+    app: createApp({
+      db,
+      course: mathCourse,
+      progressPath: resolve(process.cwd(), "does-not-exist.md"),
+      mentor: mentorOverride ?? fakeMentor(grade),
+    }),
+  }
+}
+
 describe("lesson submit", () => {
   it("unlocks next lesson on grade 4 and stores a full attempt", async () => {
     const { db, app } = makeApp(4)
@@ -263,6 +327,56 @@ describe("lesson submit", () => {
     const attempt = db.prepare("select * from attempts order by id desc limit 1").get() as any
     expect(attempt.scope_id).toBe("econ-1")
     expect(JSON.parse(attempt.code_json)).toEqual({})
+  })
+
+  it("refuses to submit an empty step-by-step solution", async () => {
+    const { app } = makeMathApp(4)
+    const res = await request(app).post("/api/lessons/math-1/submit").send({})
+    expect(res.status).toBe(400)
+    expect(res.body.error).toBe("steps_empty")
+  })
+
+  it("sends a step-by-step solution and its criteria to the mentor", async () => {
+    const captured: Array<{
+      tasks: Array<{
+        kind: string
+        criteria?: string[]
+        files: Array<{ name: string; content: string }>
+      }>
+    }> = []
+    const base = fakeMentor(4)
+    const mentor: MentorService = {
+      ...base,
+      reviewLesson: async (sessionId, reviewRequest) => {
+        captured.push(reviewRequest as any)
+        return base.reviewLesson(sessionId, reviewRequest)
+      },
+    }
+    const { db, app } = makeMathApp(4, mentor)
+    db.prepare(
+      "insert into task_files (lesson_id, task_id, file_name, content, updated_at) values (?, ?, ?, ?, ?)",
+    ).run(
+      "math-1",
+      "math-1-task-1",
+      "solution.json",
+      JSON.stringify({
+        steps: [
+          {
+            formula: "\\int_0^1 x\\,dx = \\frac{1}{2}",
+            explanation: "Первообразная и подстановка пределов.",
+          },
+        ],
+        answer: "1/2",
+      }),
+      new Date().toISOString(),
+    )
+
+    const res = await request(app).post("/api/lessons/math-1/submit").send({})
+    expect(res.status).toBe(200)
+    expect(res.body.passed).toBe(true)
+    expect(captured[0].tasks[0].kind).toBe("steps")
+    expect(captured[0].tasks[0].criteria).toEqual(["верный ход", "верный ответ"])
+    expect(captured[0].tasks[0].files[0].content).toContain("Первообразная")
   })
 
   it("refuses to submit an incomplete lesson", async () => {

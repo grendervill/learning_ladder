@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import {
   AlertTriangle,
   Check,
@@ -11,7 +12,12 @@ import {
   Trash2,
 } from "lucide-react"
 import { useLesson } from "../../lib/useLesson"
-import { resetTaskFiles, saveTaskFiles, useTaskFiles } from "../../lib/useTaskFiles"
+import {
+  resetTaskFiles,
+  saveTaskFiles,
+  useTaskFiles,
+  type TaskFilesResponse,
+} from "../../lib/useTaskFiles"
 import { Markdown } from "../../lib/markdown"
 import { CodeEditor } from "./CodeEditor"
 import { EditorSettings } from "./EditorSettings"
@@ -24,6 +30,7 @@ import { LovePreview } from "./love/LovePreview"
 import { RunPanel } from "./RunPanel"
 import { SubmitPanel } from "./SubmitPanel"
 import { TerminalPanel } from "./TerminalPanel"
+import { StepsPractice } from "./StepsPractice"
 import { useEditorSettings } from "./useEditorSettings"
 import "./PracticeTab.css"
 
@@ -54,6 +61,7 @@ function PracticeTabInner({
 }) {
   const { data: lesson, isLoading, isError, refetch } = useLesson(lessonId)
   const { client: lspClient } = useLspClient()
+  const queryClient = useQueryClient()
   const [activeTaskId, setActiveTaskId] = useState(initialTaskId ?? "")
   const [files, setFiles] = useState<FileItem[]>([])
   const [activeFile, setActiveFile] = useState("")
@@ -70,6 +78,28 @@ function PracticeTabInner({
   const starterNames = new Set(
     (filesQuery.data?.starterFiles ?? task?.files ?? []).map((file) => file.name),
   )
+  const solutionFile = task
+    ? files.find((file) => file.name === task.entry) ??
+      files.find((file) => file.name === "solution.json")
+    : undefined
+  const stepsContent = solutionFile?.content ?? ""
+  const stepsReady =
+    task?.kind !== "steps" ||
+    (() => {
+      try {
+        const parsed = JSON.parse(stepsContent)
+        return (
+          Array.isArray(parsed.steps) &&
+          parsed.steps.some(
+            (step: any) =>
+              String(step?.formula ?? "").trim().length > 0 ||
+              String(step?.explanation ?? "").trim().length > 0,
+          )
+        )
+      } catch {
+        return false
+      }
+    })()
 
   useEffect(() => {
     if (!lesson) return
@@ -83,7 +113,11 @@ function PracticeTabInner({
     if (loadedTask.current === task.id) return
     loadedTask.current = task.id
     setFiles(filesQuery.data.files)
-    setActiveFile(filesQuery.data.files[0]?.name ?? "")
+    const entry =
+      filesQuery.data.files.find((file) => file.name === task.entry)?.name ??
+      filesQuery.data.files[0]?.name ??
+      ""
+    setActiveFile(entry)
     setSaveState("idle")
   }, [task, filesQuery.data])
 
@@ -97,6 +131,10 @@ function PracticeTabInner({
     setSaveState("saving")
     try {
       await saveTaskFiles(lessonId, taskId, nextFiles)
+      queryClient.setQueryData<TaskFilesResponse>(
+        ["task-files", lessonId, taskId],
+        (current) => (current ? { ...current, files: nextFiles } : current),
+      )
       setSaveState("saved")
     } catch {
       setSaveState("error")
@@ -137,6 +175,10 @@ function PracticeTabInner({
       const result = await resetTaskFiles(lessonId, task.id)
       setFiles(result.files)
       setActiveFile(result.files[0]?.name ?? "")
+      queryClient.setQueryData<TaskFilesResponse>(
+        ["task-files", lessonId, task.id],
+        (current) => (current ? { ...current, files: result.files } : current),
+      )
       setSaveState("saved")
     } catch {
       setSaveState("error")
@@ -200,10 +242,11 @@ function PracticeTabInner({
         <span className="section-kicker">
           <Save size={13} aria-hidden /> практика
         </span>
-        <h2>Пиши руками</h2>
+        <h2>{task?.kind === "steps" ? "Покажи ход решения" : "Пиши руками"}</h2>
         <p>
-          Код сохраняется автоматически. Запуск, ошибки и проверка наставником подключаются
-          в следующем слое.
+          {task?.kind === "steps"
+            ? "Решение сохраняется автоматически. Вводи формулы в LaTeX и объясняй каждый шаг — наставник проверяет именно ход."
+            : "Код сохраняется автоматически. Запуск, ошибки и проверка наставником подключаются в следующем слое."}
         </p>
         {lesson.practiceIntro && (
           <div className="practice-intro">
@@ -247,7 +290,33 @@ function PracticeTabInner({
             </div>
           </details>
 
-          {task.kind === "terminal" ? (
+          {task.kind === "steps" ? (
+            filesQuery.isLoading ? (
+              <div className="practice-loading" aria-busy="true">
+                <LoaderCircle size={17} className="spin" aria-hidden />
+                Загружаем решение
+              </div>
+            ) : filesQuery.isError ? (
+              <div className="editor-load-error">
+                Не удалось загрузить решение.{" "}
+                <button type="button" onClick={() => filesQuery.refetch()}>
+                  Повторить
+                </button>
+              </div>
+            ) : loadedTask.current !== task.id || files.length === 0 ? (
+              <div className="practice-loading" aria-busy="true">
+                <LoaderCircle size={17} className="spin" aria-hidden />
+                Загружаем решение
+              </div>
+            ) : (
+              <StepsPractice
+                key={task.id}
+                content={stepsContent}
+                onChange={updateFile}
+                saveState={saveState}
+              />
+            )
+          ) : task.kind === "terminal" ? (
             <TerminalPanel lessonId={lessonId} taskId={task.id} />
           ) : (
             <>
@@ -342,11 +411,7 @@ function PracticeTabInner({
             </div>
           </div>
 
-          {task.kind === "steps" ? (
-            <div className="practice-empty">
-              <p>Практика с шагами решения появится в следующем обновлении.</p>
-            </div>
-          ) : task.kind === "love" ? (
+          {task.kind === "love" ? (
             <LovePreview files={files} entry={task.entry} />
           ) : (
             <RunPanel
@@ -359,7 +424,7 @@ function PracticeTabInner({
             </>
           )}
 
-          <SubmitPanel lesson={lesson} onQuestions={onQuestions} />
+          <SubmitPanel lesson={lesson} extraReady={stepsReady} onQuestions={onQuestions} />
         </>
       )}
 

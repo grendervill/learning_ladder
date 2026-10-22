@@ -88,22 +88,48 @@ function formatRun(run: MentorReviewRequest["tasks"][number]["lastRun"]): string
   return `exit=${run.exitCode}${run.timedOut ? " (timeout)" : ""}${run.syntaxError ? " (syntax error)" : ""}\nstdout:\n${run.stdout || "(пусто)"}\nstderr:\n${run.stderr || "(пусто)"}`
 }
 
+function formatStudentWork(task: MentorReviewRequest["tasks"][number]): string {
+  if (task.kind === "steps") {
+    const solution = task.files.find((file) => file.name === "solution.json")?.content
+    if (solution) {
+      try {
+        const parsed = JSON.parse(solution)
+        const steps = Array.isArray(parsed.steps) ? parsed.steps : []
+        const lines = steps.map((step: any, index: number) => {
+          const formula = String(step?.formula ?? "").trim() || "(пусто)"
+          const explanation = String(step?.explanation ?? "").trim() || "(пусто)"
+          return `Шаг ${index + 1}:\n  формула: ${formula}\n  пояснение: ${explanation}`
+        })
+        return `${lines.join("\n") || "(шагов нет)"}\nФинальный ответ: ${String(parsed.answer ?? "").trim() || "(пусто)"}`
+      } catch {
+        // Fall back to the raw file below.
+      }
+    }
+  }
+  return (
+    task.files
+      .map((file) => `--- ${file.name} ---\n${file.content}`)
+      .join("\n") || "(файлов нет)"
+  )
+}
+
 function buildReviewPrompt(request: MentorReviewRequest): string {
   const tasks = request.tasks
     .map((task) => {
-      const files = task.files
-        .map((file) => `--- ${file.name} ---\n${file.content}`)
-        .join("\n")
       const terminal = (task.terminalHistory ?? [])
         .map(
           (entry) =>
             `$ ${entry.command}\n${entry.stdout}${entry.stderr ? `\n[stderr] ${entry.stderr}` : ""}\n(exit ${entry.exitCode})`,
         )
         .join("\n\n")
+      const label = task.kind === "steps" ? "Решение по шагам (LaTeX и пояснения):" : "Код ученика:"
+      const criteria = task.criteria?.length
+        ? `\nКритерии: ${JSON.stringify(task.criteria)}`
+        : ""
       return `### Задание ${task.taskId} · ${task.title} (${task.kind})
-Описание: ${task.prompt}
-Код ученика:
-${files || "(файлов нет)"}
+Описание: ${task.prompt}${criteria}
+${label}
+${formatStudentWork(task)}
 Последний запуск:
 ${formatRun(task.lastRun)}
 История терминала:
@@ -146,6 +172,7 @@ ${terminal || "(команд не было)"}`
 
 Требования к проверке:
 - оцени уровень понимания и самостоятельность, а не только «работает/не работает»;
+- для математики проверяй каждый шаг, а не только финальный ответ;
 - не давай готовый код и не вставляй полные реализации;
 - в tasks верни feedback по каждому заданию;
 - в quiz верни feedback по каждому вопросу;

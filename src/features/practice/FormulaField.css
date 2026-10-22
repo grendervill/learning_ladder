@@ -1,0 +1,75 @@
+.formula-field {
+  display: grid;
+  gap: 8px;
+}
+
+.formula-field__label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.formula-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.formula-input:focus {
+  border-color: var(--accent);
+}
+
+.formula-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.formula-snippet {
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.formula-snippet:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.formula-preview {
+  min-height: 42px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  border: 1px dashed var(--line);
+  border-radius: 7px;
+  background: var(--surface-tint);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.formula-preview .katex-display {
+  margin: 0;
+}
+
+.formula-preview--error {
+  color: var(--danger);
+  font-size: 11px;
+}
+
+.formula-preview__empty {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}

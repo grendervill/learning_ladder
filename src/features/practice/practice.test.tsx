@@ -1,4 +1,4 @@
-import { cleanup, screen, waitFor } from "@testing-library/react"
+import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react"
 import { EditorView } from "@codemirror/view"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { PracticeTab } from "./PracticeTab"
@@ -80,5 +80,74 @@ describe("PracticeTab", () => {
         ),
       { timeout: 2500 },
     )
+  })
+
+  it("shows the steps editor for math tasks and autosaves the solution JSON", async () => {
+    const stepsLesson = {
+      ...lesson,
+      id: "math-1",
+      title: "Интеграл",
+      tasks: [
+        {
+          id: "math-1-task-1",
+          title: "Площадь под параболой",
+          prompt: "Решите по шагам.",
+          kind: "steps",
+          entry: "solution.json",
+          files: [{ name: "solution.json", content: '{"steps":[],"answer":""}' }],
+          args: [],
+          stdin: "",
+          timeoutMs: 3000,
+          criteria: ["верный ход"],
+        },
+      ],
+    }
+    ;(fetch as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      async (url: string, init?: RequestInit) => {
+        if (String(url).includes("/files")) {
+          if (init?.method === "PUT") {
+            return { ok: true, json: async () => ({ files: stepsLesson.tasks[0].files }) }
+          }
+          return {
+            ok: true,
+            json: async () => ({
+              files: stepsLesson.tasks[0].files,
+              starterFiles: stepsLesson.tasks[0].files,
+              kind: "steps",
+            }),
+          }
+        }
+        return { ok: true, json: async () => stepsLesson }
+      },
+    )
+
+    renderWithProviders(<PracticeTab lessonId="math-1" />)
+
+    expect(await screen.findByText("Покажи ход решения")).toBeInTheDocument()
+    expect(document.querySelector(".cm-editor")).toBeNull()
+    const formula = await screen.findByLabelText("Формула шага 1")
+    fireEvent.change(formula, {
+      target: { value: "\\int_0^1 x^2\\,dx" },
+    })
+    fireEvent.change(screen.getByLabelText("Финальный ответ"), {
+      target: { value: "1/3" },
+    })
+
+    await waitFor(
+      () =>
+        expect(fetch).toHaveBeenCalledWith(
+          expect.stringContaining("/files"),
+          expect.objectContaining({ method: "PUT" }),
+        ),
+      { timeout: 2500 },
+    )
+    const calls = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls
+    const put = calls.find((call) => String(call[0]).includes("/files") && call[1]?.method === "PUT")
+    const saved = JSON.parse(String(put?.[1]?.body)).files.find(
+      (file: { name: string }) => file.name === "solution.json",
+    )
+    const solution = JSON.parse(saved.content)
+    expect(solution.steps[0].formula).toBe("\\int_0^1 x^2\\,dx")
+    expect(solution.answer).toBe("1/3")
   })
 })

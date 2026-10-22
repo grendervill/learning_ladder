@@ -49,6 +49,10 @@ export function createRunRouter(getContext: () => AppContext): Router {
         res.status(400).json({ error: "terminal_task_uses_terminal_endpoint" })
         return
       }
+      if (task.kind === "steps") {
+        res.status(400).json({ error: "steps_task_is_not_runnable" })
+        return
+      }
 
       const bodyFiles = req.body?.files
       let files: TaskFile[]

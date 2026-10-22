@@ -98,7 +98,29 @@ export function createSubmitRouter(getContext: () => AppContext, getMentor: () =
       files: loadFiles(context, lesson.id, task.id, task.files),
       lastRun: lastRun(context, lesson.id, task.id),
       terminalHistory: task.kind === "terminal" ? terminalHistory(context, lesson.id, task.id) : undefined,
+      criteria: task.criteria,
     }))
+    const stepsTask = tasks.find((task) => task.kind === "steps")
+    if (stepsTask) {
+      const solution = stepsTask.files.find((file) => file.name === "solution.json")?.content ?? ""
+      let hasStep = false
+      try {
+        const parsed = JSON.parse(solution)
+        hasStep =
+          Array.isArray(parsed.steps) &&
+          parsed.steps.some(
+            (step: any) =>
+              String(step?.formula ?? "").trim().length > 0 ||
+              String(step?.explanation ?? "").trim().length > 0,
+          )
+      } catch {
+        hasStep = false
+      }
+      if (!hasStep) {
+        res.status(400).json({ error: "steps_empty" })
+        return
+      }
+    }
     const quiz = lesson.quiz.questions.map((question) => ({
       id: question.id,
       type: question.type,

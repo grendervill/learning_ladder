@@ -26,6 +26,7 @@ export interface MentorTaskInput {
   files: MentorFile[]
   lastRun?: MentorRun | null
   terminalHistory?: MentorTerminalEntry[]
+  criteria?: string[]
 }
 
 export interface MentorQuizQuestion {
