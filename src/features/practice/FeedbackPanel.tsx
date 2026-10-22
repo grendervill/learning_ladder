@@ -13,9 +13,11 @@ import "./FeedbackPanel.css"
 export function FeedbackPanel({
   result,
   onRetry,
+  kind = "lesson",
 }: {
   result: SubmitResponse
   onRetry: () => void
+  kind?: "lesson" | "chapter"
 }) {
   const feedback = result.feedback
   const next = result.nextLessonId
@@ -28,10 +30,18 @@ export function FeedbackPanel({
           <span className="section-kicker">
             <Sparkles size={13} aria-hidden /> разбор наставника
           </span>
-          <h3>{passed ? "Урок закрыт" : "Есть над чем поработать"}</h3>
+          <h3>
+            {passed
+              ? kind === "chapter"
+                ? "Глава закрыта"
+                : "Урок закрыт"
+              : "Есть над чем поработать"}
+          </h3>
           <p>
             {passed
-              ? "Оценка достаточна, следующая папка открыта. Не спеши — прочитай разбор."
+              ? kind === "chapter"
+                ? "Общий квиз сдан. Следующая глава открыта — но сначала посмотри разбор."
+                : "Оценка достаточна, следующая папка открыта. Не спеши — прочитай разбор."
               : "Пока не хватает до 4. Разбор ниже поможет доработать без готового решения."}
           </p>
         </div>
@@ -112,7 +122,8 @@ export function FeedbackPanel({
         {passed ? (
           next ? (
             <Link to={`/lessons/${next}`} className="feedback__primary">
-              Следующий урок <ArrowRight size={14} aria-hidden />
+              {kind === "chapter" ? "Первая папка следующей главы" : "Следующий урок"}{" "}
+              <ArrowRight size={14} aria-hidden />
             </Link>
           ) : (
             <Link to="/performance" className="feedback__primary">

@@ -32,6 +32,7 @@ export interface MentorQuizQuestion {
 }
 
 export interface MentorReviewRequest {
+  scope?: "lesson" | "chapter"
   lessonId: string
   lessonTitle: string
   chapterTitle: string
@@ -72,6 +73,7 @@ export interface MentorContext {
   taskTitle?: string
   code?: MentorFile[]
   lastRun?: MentorRun | null
+  history?: Array<{ role: "user" | "assistant"; content: string }>
 }
 
 export interface MentorClassification {

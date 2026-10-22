@@ -264,6 +264,18 @@
   border-top: 1px solid var(--sidebar-line);
   color: color-mix(in srgb, var(--sidebar-muted) 82%, transparent);
   font-size: 10px;
+  text-decoration: none;
+}
+
+.sidebar-quiz--locked {
+  opacity: .65;
+  cursor: default;
+}
+
+a.sidebar-quiz:hover {
+  color: var(--sidebar-text);
+  background: color-mix(in srgb, var(--sidebar-accent) 7%, transparent);
+  border-radius: 4px;
 }
 
 .sidebar-quiz small {

@@ -1,0 +1,242 @@
+.mentor-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(6, 14, 11, .42);
+  backdrop-filter: blur(2px);
+}
+
+.mentor-drawer {
+  display: flex;
+  flex-direction: column;
+  width: min(430px, 100%);
+  height: 100%;
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  box-shadow: -20px 0 60px rgba(0, 0, 0, .18);
+  animation: mentor-slide 220ms cubic-bezier(.2, .7, .3, 1);
+}
+
+@keyframes mentor-slide {
+  from { transform: translateX(30px); opacity: .4; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.mentor-drawer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 17px 17px 15px;
+  border-bottom: 1px solid var(--line);
+}
+
+.mentor-drawer__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mentor-drawer__mark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent-faint);
+  color: var(--accent);
+}
+
+.mentor-drawer__title b {
+  display: block;
+  font-size: 13px;
+}
+
+.mentor-drawer__title small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 8px;
+}
+
+.mentor-drawer__head button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.mentor-drawer__head button:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.mentor-messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 17px;
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent-soft) 8%, transparent), transparent 18rem),
+    var(--surface);
+}
+
+.mentor-intro {
+  display: grid;
+  gap: 11px;
+  padding: 16px;
+  border: 1px dashed var(--line);
+  border-radius: 9px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.mentor-intro > svg {
+  color: var(--accent);
+}
+
+.mentor-intro p {
+  margin: 0;
+}
+
+.mentor-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mentor-suggestions button {
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 9.5px;
+  cursor: pointer;
+}
+
+.mentor-suggestions button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.mentor-message {
+  max-width: 92%;
+  margin-bottom: 11px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.mentor-message--user {
+  margin-left: auto;
+  background: var(--accent);
+  color: #f5fbf6;
+}
+
+.mentor-message--user p {
+  margin: 0;
+}
+
+.mentor-message--assistant {
+  border: 1px solid var(--line);
+  background: var(--surface-strong);
+  color: var(--text-soft);
+}
+
+.mentor-message--assistant p {
+  margin: 0 0 8px;
+}
+
+.mentor-message--assistant p:last-child {
+  margin-bottom: 0;
+}
+
+.mentor-message--assistant code {
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--surface-tint);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: .88em;
+}
+
+.mentor-message--assistant ul,
+.mentor-message--assistant ol {
+  margin: 5px 0;
+  padding-left: 17px;
+}
+
+.mentor-thinking,
+.mentor-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 0;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.mentor-error {
+  color: var(--danger);
+}
+
+.mentor-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--line);
+  background: var(--surface-strong);
+}
+
+.mentor-input input {
+  min-width: 0;
+  flex: 1;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.mentor-input input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.mentor-input button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--accent);
+  border-radius: 7px;
+  background: var(--accent);
+  color: #f5fbf6;
+  cursor: pointer;
+}
+
+.mentor-input button:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+@media (max-width: 560px) {
+  .mentor-drawer {
+    width: 100%;
+  }
+}

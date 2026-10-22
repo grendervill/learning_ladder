@@ -18,6 +18,8 @@ import { EditorSettings } from "./EditorSettings"
 import { FileTabs } from "./FileTabs"
 import { LspProvider, documentUri, useLspClient } from "./LspProvider"
 import { LspStatus } from "./LspStatus"
+import { MessageCircle } from "lucide-react"
+import { MentorDrawer } from "../mentor/MentorDrawer"
 import { LovePreview } from "./love/LovePreview"
 import { RunPanel } from "./RunPanel"
 import { SubmitPanel } from "./SubmitPanel"
@@ -58,6 +60,7 @@ function PracticeTabInner({
   const [saveState, setSaveState] = useState<SaveState>("idle")
   const [addingFile, setAddingFile] = useState(false)
   const [newFileName, setNewFileName] = useState("")
+  const [mentorOpen, setMentorOpen] = useState(false)
   const { indent, setIndent } = useEditorSettings()
   const timer = useRef<number | null>(null)
   const loadedTask = useRef<string | null>(null)
@@ -355,6 +358,17 @@ function PracticeTabInner({
           <SubmitPanel lesson={lesson} onQuestions={onQuestions} />
         </>
       )}
+
+      <button type="button" className="mentor-fab" onClick={() => setMentorOpen(true)}>
+        <MessageCircle size={14} aria-hidden />
+        Спросить наставника
+      </button>
+      <MentorDrawer
+        open={mentorOpen}
+        onClose={() => setMentorOpen(false)}
+        lessonId={lessonId}
+        taskId={task?.id}
+      />
     </div>
   )
 }

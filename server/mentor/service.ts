@@ -123,7 +123,12 @@ ${formatRun(task.lastRun)}`
     .map((attempt) => `- ${attempt.submittedAt}: ${attempt.grade}/5 — ${attempt.summary}`)
     .join("\n")
 
-  return `Проверь урок «${request.lessonTitle}» (${request.lessonId}) из главы «${request.chapterTitle}».
+  const subject =
+    request.scope === "chapter"
+      ? `Проверь общий квиз главы «${request.chapterTitle}» (${request.lessonId}). Это итоговая проверка главы, а не отдельного задания.`
+      : `Проверь урок «${request.lessonTitle}» (${request.lessonId}) из главы «${request.chapterTitle}».`
+
+  return `${subject}
 
 Требования к проверке:
 - оцени уровень понимания и самостоятельность, а не только «работает/не работает»;
@@ -152,6 +157,10 @@ ${quiz || "вопросов нет"}
 
 function buildAskPrompt(context: MentorContext, question: string): string {
   const code = context.code?.map((file) => `--- ${file.name} ---\n${file.content}`).join("\n") ?? ""
+  const history = (context.history ?? [])
+    .slice(-8)
+    .map((message) => `${message.role === "user" ? "Ученик" : "Наставник"}: ${message.content}`)
+    .join("\n")
   return `Контекст наставника:
 Урок: ${context.lessonTitle ?? "не указан"}
 Задание: ${context.taskTitle ?? "не указано"}
@@ -159,6 +168,8 @@ function buildAskPrompt(context: MentorContext, question: string): string {
 ${code || "(нет)"}
 Последний запуск:
 ${formatRun(context.lastRun)}
+История диалога:
+${history || "(начало диалога)"}
 Вопрос ученика: ${question}
 
 Ответь как наставник: коротко, по делу, с наводящим вопросом или следующим шагом. Не давай готовый код.`

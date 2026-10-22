@@ -146,13 +146,29 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
                     </NavLink>
                   )
                 })}
-                {chapter.quiz !== null && (
-                  <span className={`sidebar-quiz sidebar-quiz--${chapterStatus}`}>
-                    <GraduationCap size={14} aria-hidden />
-                    <span>Квиз главы</span>
-                    <small>{chapterStatus === "passed" ? "сдан" : "после уроков"}</small>
-                  </span>
-                )}
+                {chapter.quiz !== null && (() => {
+                  const quizAvailable =
+                    course.access.nextChapterQuizId === chapter.id || chapterStatus === "passed"
+                  const content = (
+                    <>
+                      <GraduationCap size={14} aria-hidden />
+                      <span>Квиз главы</span>
+                      <small>{chapterStatus === "passed" ? "сдан" : quizAvailable ? "пройти" : "после уроков"}</small>
+                    </>
+                  )
+                  return quizAvailable ? (
+                    <NavLink
+                      to={`/chapters/${chapter.id}/quiz`}
+                      className={`sidebar-quiz sidebar-quiz--${chapterStatus}`}
+                    >
+                      {content}
+                    </NavLink>
+                  ) : (
+                    <span className={`sidebar-quiz sidebar-quiz--${chapterStatus} sidebar-quiz--locked`}>
+                      {content}
+                    </span>
+                  )
+                })()}
               </section>
             )
           })}
