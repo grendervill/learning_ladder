@@ -5,6 +5,7 @@ import type { DatabaseSync } from "./db"
 import type { CourseSnapshot } from "./content/types"
 import { buildContext, defaultContext, type AppContext } from "./context"
 import { createCourseRouter } from "./routes/course"
+import { createCoursesRouter } from "./routes/courses"
 import { createProgressRouter } from "./routes/progress"
 import { createQuizRouter } from "./routes/quiz"
 import { createTaskFilesRouter } from "./routes/task-files"
@@ -23,6 +24,7 @@ export interface AppOptions {
   db?: DatabaseSync
   course?: CourseSnapshot
   progressPath?: string
+  root?: string
   mentor?: MentorService
   context?: AppContext
 }
@@ -36,7 +38,7 @@ export function createApp(options: AppOptions = {}): Express {
     if (!context) {
       context =
         options.db && options.course
-          ? buildContext(options.db, options.course, options.progressPath)
+          ? buildContext(options.db, options.course, options.progressPath, options.root)
           : defaultContext()
     }
     return context
@@ -47,6 +49,7 @@ export function createApp(options: AppOptions = {}): Express {
   })
 
   app.use("/api", createCourseRouter(getContext))
+  app.use("/api", createCoursesRouter(getContext))
   app.use("/api", createQuizRouter(getContext))
   app.use("/api", createTaskFilesRouter(getContext))
   app.use("/api", createRunRouter(getContext))

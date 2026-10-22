@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { Router } from "express"
 import type { AppContext } from "../context"
-import { accessFor } from "../access-data"
+import { accessForLesson } from "../access-data"
 import { isLessonAccessible } from "../access"
 import type { MentorService } from "../mentor/service"
 import type { MentorContext, MentorRun } from "../mentor/types"
@@ -52,7 +52,7 @@ export function createMentorAskRouter(
         res.status(404).json({ error: "lesson_not_found" })
         return
       }
-      const access = accessFor(context.db, course)
+      const access = accessForLesson(context.db, course, lessonId)
       if (!isLessonAccessible(course, lessonId) || access.lessons[lessonId] === "locked") {
         res.status(403).json({ error: "lesson_locked" })
         return

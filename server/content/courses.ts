@@ -6,6 +6,7 @@ import {
   COURSE_THEMES,
   DEFAULT_COURSE_META,
   DEFAULT_COURSE_SETTINGS,
+  DEFAULT_LUA_COURSE_META,
   DEFAULT_LUA_MENTOR_PROMPT,
   DEFAULT_MENTOR_PROMPT,
 } from "./defaults"
@@ -403,4 +404,84 @@ export function writeMentorPrompt(root: string, courseId: string, body: string):
   const path = mentorPromptPath(root, courseId)
   mkdirSync(dirname(path), { recursive: true })
   writeFileSync(path, `${body.trim()}\n`, "utf8")
+}
+
+export function coursesOf(snapshot: CourseSnapshot): CourseMeta[] {
+  return snapshot.courses && snapshot.courses.length ? snapshot.courses : [DEFAULT_LUA_COURSE_META]
+}
+
+export function courseIdOf(value: { courseId?: string }): string {
+  return value.courseId ?? "lua"
+}
+
+export function courseView(snapshot: CourseSnapshot, courseId: string): CourseSnapshot {
+  const chapters = snapshot.chapters.filter((chapter) => courseIdOf(chapter) === courseId)
+  const lessonIds = new Set(chapters.flatMap((chapter) => chapter.lessonIds))
+  const lessons = Object.fromEntries(
+    Object.entries(snapshot.lessons).filter(([lessonId]) => lessonIds.has(lessonId)),
+  )
+  return { ...snapshot, chapters, lessons }
+}
+
+export function courseIdForLesson(snapshot: CourseSnapshot, lessonId: string): string {
+  const lesson = snapshot.lessons[lessonId]
+  if (lesson?.courseId) return lesson.courseId
+  const chapter = snapshot.chapters.find((item) => item.lessonIds.includes(lessonId))
+  return chapter?.courseId ?? "lua"
+}
+
+export function courseMetaForLesson(snapshot: CourseSnapshot, lessonId: string): CourseMeta {
+  const courseId = courseIdForLesson(snapshot, lessonId)
+  return (
+    coursesOf(snapshot).find((course) => course.id === courseId) ?? {
+      ...DEFAULT_LUA_COURSE_META,
+      id: courseId,
+    }
+  )
+}
+
+export interface CourseMetaPatch {
+  title?: string
+  description?: string
+  theme?: CourseTheme
+  icon?: CourseIcon
+  mode?: CourseMode
+  settings?: Partial<CourseSettings>
+}
+
+export function writeCourseMetaPatch(
+  root: string,
+  courseId: string,
+  patch: CourseMetaPatch,
+): CourseMeta {
+  const path = join(root, "courses", courseId, "course.json")
+  if (!existsSync(path)) throw new Error("course_not_found")
+  const raw = JSON.parse(readFileSync(path, "utf8")) as RawCourseFile
+  const current = normalizeMeta(raw, courseId)
+  const next: CourseMeta = {
+    ...current,
+    ...(typeof patch.title === "string" ? { title: patch.title.trim() || current.title } : {}),
+    ...(typeof patch.description === "string" ? { description: patch.description } : {}),
+    ...(patch.theme ? { theme: patch.theme } : {}),
+    ...(patch.icon ? { icon: patch.icon } : {}),
+    ...(patch.mode ? { mode: patch.mode } : {}),
+    settings: { ...current.settings, ...(patch.settings ?? {}) },
+  }
+  const payload = {
+    ...raw,
+    id: courseId,
+    title: next.title,
+    description: next.description,
+    theme: next.theme,
+    icon: next.icon,
+    mode: next.mode,
+    settings: next.settings,
+    builtIn: next.builtIn,
+    createdAt: next.createdAt,
+    format: raw.format ?? next.format ?? "legacy",
+  }
+  const tmp = `${path}.tmp`
+  writeFileSync(tmp, `${JSON.stringify(payload, null, 2)}\n`, "utf8")
+  renameSync(tmp, path)
+  return next
 }

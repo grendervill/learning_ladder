@@ -10,21 +10,23 @@ export interface AppContext {
   getCourse: () => CourseSnapshot
   refreshCourse?: () => CourseSnapshot
   progressPath: string
+  root?: string
 }
 
 export function buildContext(
   db: DatabaseSync,
   course: CourseSnapshot,
   progressPath = resolve(process.cwd(), "PROGRESS.md"),
+  root = process.cwd(),
 ): AppContext {
   seedFromProgressIfEmpty(db, course, progressPath)
-  return { db, getCourse: () => course, progressPath }
+  return { db, getCourse: () => course, progressPath, root }
 }
 
 export function defaultContext(): AppContext {
   const db = getDb()
   let course = scanCourse(process.cwd())
-  const base = buildContext(db, course)
+  const base = buildContext(db, course, undefined, process.cwd())
   return {
     ...base,
     getCourse: () => course,
