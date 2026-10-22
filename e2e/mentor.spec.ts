@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test"
+import { dismissReport } from "./helpers"
 
 test("mentor answers without giving ready code", async ({ page }) => {
   await page.route("**/api/mentor/ask", async (route) => {
@@ -13,6 +14,7 @@ test("mentor answers without giving ready code", async ({ page }) => {
   })
 
   await page.goto("/lessons/02-variables-types?tab=practice")
+  await dismissReport(page)
   await page.locator(".mentor-fab").click()
   await expect(page.getByRole("dialog", { name: "Наставник" })).toBeVisible()
   await page.getByRole("textbox", { name: "Сообщение наставнику" }).fill("Почему type выдаёт string?")

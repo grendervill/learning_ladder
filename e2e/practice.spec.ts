@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test"
+import { dismissReport } from "./helpers"
 
 test("runs code and shows LSP diagnostics", async ({ page }) => {
   await page.goto("/lessons/02-variables-types?tab=practice")
+  await dismissReport(page)
   await expect(page.locator(".cm-editor")).toBeVisible()
   await expect(page.locator(".lsp-status")).toContainText(/LSP live|LSP недоступен/, { timeout: 15_000 })
 

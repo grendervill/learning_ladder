@@ -1,13 +1,20 @@
 import { expect, test } from "@playwright/test"
+import { dismissReport } from "./helpers"
 
 test("opens the program and shows the current lesson", async ({ page }) => {
   await page.goto("/")
+  await dismissReport(page)
   await expect(page.getByText("Лестница Lua").first()).toBeVisible()
-  await expect(page.getByText("Основы")).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Основы", level: 2 })).toBeVisible()
   await expect(page.getByText("Переменные и типы", { exact: false }).first()).toBeVisible()
 })
 
 test("passes lesson 02 with a mocked mentor", async ({ page }) => {
+  await page.route("**/api/lessons/02-variables-types", async (route) => {
+    const response = await route.fetch()
+    const json = await response.json()
+    await route.fulfill({ response, json: { ...json, answers: {} } })
+  })
   await page.route("**/api/lessons/02-variables-types/submit", async (route) => {
     await route.fulfill({
       status: 200,
@@ -38,6 +45,7 @@ test("passes lesson 02 with a mocked mentor", async ({ page }) => {
   })
 
   await page.goto("/lessons/02-variables-types")
+  await dismissReport(page)
   await expect(page.getByRole("heading", { name: /Переменные и типы данных/ })).toBeVisible()
 
   await page.getByRole("tab", { name: "Вопросы" }).click()
@@ -46,6 +54,7 @@ test("passes lesson 02 with a mocked mentor", async ({ page }) => {
   const textareas = page.locator(".quiz-textarea")
   await textareas.nth(0).fill("local ограничивает область видимости")
   await textareas.nth(1).fill("io.read() и tonumber")
+  await expect(page.locator(".quiz-save")).toContainText("сохранено")
 
   await page.getByRole("tab", { name: "Практика" }).click()
   await page.getByRole("button", { name: "Сдать урок" }).click()

@@ -5,4 +5,6 @@ reports/
 .superpowers/
 .obsidian/
 .DS_Store
+test-results/
+playwright-report/
 Без названия.md
