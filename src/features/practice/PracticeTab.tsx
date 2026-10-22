@@ -342,7 +342,11 @@ function PracticeTabInner({
             </div>
           </div>
 
-          {task.kind === "love" ? (
+          {task.kind === "steps" ? (
+            <div className="practice-empty">
+              <p>Практика с шагами решения появится в следующем обновлении.</p>
+            </div>
+          ) : task.kind === "love" ? (
             <LovePreview files={files} entry={task.entry} />
           ) : (
             <RunPanel

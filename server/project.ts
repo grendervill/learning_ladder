@@ -7,6 +7,7 @@ import {
 } from "node:fs"
 import { homedir } from "node:os"
 import { dirname, join, resolve } from "node:path"
+import { DEFAULT_LUA_COURSE_META, DEFAULT_LUA_MENTOR_PROMPT } from "./content/defaults"
 
 export interface ProjectPaths {
   root: string
@@ -22,8 +23,6 @@ export interface ProjectPaths {
 }
 
 const FRONTMATTER = /^---\r?\n[\s\S]*?\r?\n---\r?\n?/
-
-const DEFAULT_LUA_MENTOR = `Ты — наставник по Lua. Объясняй, а не решай за ученика: задавай наводящие вопросы, показывай, где именно ошибка, и предлагай следующий маленький шаг. Никогда не давай готовый код. Отвечай по-русски, спокойно и конкретно.`
 
 const COURSE_MENTOR_AGENT = `---
 description: Наставник курса в «Лестнице обучения»
@@ -59,27 +58,6 @@ permissions:
 выдумывай факты; если данных мало, принимай разумные решения и помечай
 предположения в тексте курса. Отвечай по-русски.
 `
-
-const LUA_COURSE_META = {
-  format: "legacy" as const,
-  id: "lua",
-  title: "Lua",
-  description:
-    "Язык программирования Lua: от первого запуска и типов данных до метатаблиц, корутин и финального проекта.",
-  theme: "forest" as const,
-  icon: "code" as const,
-  mode: "programming" as const,
-  settings: {
-    runtime: "lua" as const,
-    runCommand: "lua {file}",
-    lspCommand: "lua-language-server",
-    lspArgs: [] as string[],
-    fileExtension: ".lua",
-    entry: "main.lua",
-  },
-  builtIn: true,
-  createdAt: new Date().toISOString(),
-}
 
 export function appConfigPath(): string {
   if (process.env.LEARNINGLUA_CONFIG) return resolve(process.env.LEARNINGLUA_CONFIG)
@@ -163,7 +141,7 @@ export function migrateLegacyLua(root: string): boolean {
   if (existsSync(legacyCourse)) renameSync(legacyCourse, join(luaDir, "course"))
 
   const mentorSource = join(paths.root, ".opencode", "agents", "lua-mentor.md")
-  let mentor = DEFAULT_LUA_MENTOR
+  let mentor = DEFAULT_LUA_MENTOR_PROMPT
   if (existsSync(mentorSource)) {
     const raw = readFileSync(mentorSource, "utf8")
     const body = raw.replace(FRONTMATTER, "").trim()
@@ -172,7 +150,7 @@ export function migrateLegacyLua(root: string): boolean {
   writeFileSync(join(luaDir, "mentor.md"), `${mentor}\n`, "utf8")
   writeFileSync(
     join(luaDir, "course.json"),
-    `${JSON.stringify(LUA_COURSE_META, null, 2)}\n`,
+    `${JSON.stringify(DEFAULT_LUA_COURSE_META, null, 2)}\n`,
     "utf8",
   )
   return true

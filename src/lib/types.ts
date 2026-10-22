@@ -42,7 +42,7 @@ export interface LessonDetail {
     id: string
     title: string
     prompt: string
-    kind: "code" | "terminal" | "love" | "project"
+    kind: "code" | "terminal" | "love" | "project" | "steps"
     entry: string
     files: Array<{ name: string; content: string }>
     args: string[]

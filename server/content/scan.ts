@@ -22,7 +22,7 @@ function error(code: string, message: string, extra: Partial<ContentError> = {})
   return { code, message, ...extra }
 }
 
-export function scanCourse(root: string): CourseSnapshot {
+export function scanCourse(root: string, courseId?: string): CourseSnapshot {
   const errors: ContentError[] = []
   const hash = createHash("sha1")
   const record = (path: string, content: string) => {
@@ -111,6 +111,7 @@ export function scanCourse(root: string): CourseSnapshot {
 
       lessons[lessonId] = {
         id: lessonId,
+        courseId,
         title: split.title,
         theoryMarkdown: split.theoryMarkdown,
         practiceIntro: split.practiceIntro,
@@ -118,7 +119,7 @@ export function scanCourse(root: string): CourseSnapshot {
         quiz,
         errors: lessonErrors,
       }
-      errors.push(...lessonErrors)
+      errors.push(...lessonErrors.map((error) => ({ ...error, courseId })))
     }
   } else {
     errors.push(error("lessons_missing", "Нет папки lessons", { path: lessonsDir }))
@@ -179,13 +180,14 @@ export function scanCourse(root: string): CourseSnapshot {
 
     chapters.push({
       id: chapterFile.id,
+      courseId,
       title: chapterFile.title,
       description: chapterFile.description ?? "",
       lessonIds: chapterFile.lessonIds,
       quiz,
       errors: chapterErrors,
     })
-    errors.push(...chapterErrors)
+    errors.push(...chapterErrors.map((error) => ({ ...error, courseId })))
   }
 
   const unassigned = Object.keys(lessons).filter((lessonId) => !assigned.has(lessonId)).sort()
