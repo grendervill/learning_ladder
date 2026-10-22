@@ -26,10 +26,8 @@ if [ ! -d node_modules ]; then
   npm install
 fi
 
-if [ ! -f dist/index.html ]; then
-  echo "Собираю интерфейс…"
-  npm run build
-fi
+echo "Собираю интерфейс…"
+npm run build
 
 echo "Запускаю LearningLua на http://127.0.0.1:4173"
 (sleep 1 && open http://127.0.0.1:4173 >/dev/null 2>&1 || true) &
