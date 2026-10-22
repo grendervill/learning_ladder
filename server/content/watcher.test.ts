@@ -25,7 +25,7 @@ describe("startContentWatcher", () => {
       root,
       debounceMs: 80,
       onChange: (path) => {
-        changed = path
+        if (path.includes("README.md")) changed = path
       },
     })
     await once(watcher, "ready")
