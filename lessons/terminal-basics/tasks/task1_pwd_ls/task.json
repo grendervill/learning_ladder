@@ -1,0 +1,9 @@
+{
+  "title": "Осмотреться: где я и что вокруг",
+  "kind": "terminal",
+  "entry": "",
+  "files": [],
+  "args": [],
+  "stdin": "",
+  "timeoutMs": 3000
+}
