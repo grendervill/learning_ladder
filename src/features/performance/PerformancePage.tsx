@@ -94,14 +94,63 @@ export function PerformancePage() {
         ) : (
           <div className="attempt-list">
             {progress.data.attempts.map((attempt) => (
-              <div className="attempt-row" key={attempt.id}>
-                <span className="attempt-grade">{attempt.grade}</span>
-                <div>
-                  <b>{attempt.scopeId}</b>
-                  <p>{attempt.feedback?.summary ?? "Разбор сохранён."}</p>
+              <details className="attempt-item" key={attempt.id}>
+                <summary>
+                  <span className="attempt-grade">{attempt.grade}</span>
+                  <div className="attempt-summary">
+                    <b>{attempt.scopeId}</b>
+                    <p>{attempt.feedback?.summary ?? "Разбор сохранён."}</p>
+                  </div>
+                  <time>{new Date(attempt.submittedAt).toLocaleString("ru-RU")}</time>
+                </summary>
+                <div className="attempt-detail">
+                  {attempt.feedback?.strengths?.length > 0 && (
+                    <div>
+                      <h4>Сильные стороны</h4>
+                      <ul>
+                        {attempt.feedback.strengths.map((item: string) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {attempt.feedback?.issues?.length > 0 && (
+                    <div>
+                      <h4>Что улучшить</h4>
+                      <ul>
+                        {attempt.feedback.issues.map((item: string) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {attempt.feedback?.tasks?.length > 0 && (
+                    <div>
+                      <h4>По заданиям</h4>
+                      {attempt.feedback.tasks.map((task: any) => (
+                        <p key={task.taskId}>
+                          <b>{task.taskId}</b> — {task.comment}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                  {attempt.feedback?.quiz?.length > 0 && (
+                    <div>
+                      <h4>По вопросам</h4>
+                      {attempt.feedback.quiz.map((question: any) => (
+                        <p key={question.questionId}>
+                          <b>{question.questionId}</b> — {question.comment}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                  {attempt.feedback?.nextStep && (
+                    <div className="attempt-detail__next">
+                      <b>Следующий шаг:</b> {attempt.feedback.nextStep}
+                    </div>
+                  )}
                 </div>
-                <time>{new Date(attempt.submittedAt).toLocaleString("ru-RU")}</time>
-              </div>
+              </details>
             ))}
           </div>
         )}

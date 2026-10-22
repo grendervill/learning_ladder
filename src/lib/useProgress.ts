@@ -55,5 +55,8 @@ export function useProgress() {
   return useQuery({
     queryKey: ["progress"],
     queryFn: () => fetchJson<ProgressResponse>("/api/progress"),
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   })
 }

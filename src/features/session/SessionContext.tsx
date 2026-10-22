@@ -13,6 +13,7 @@ export interface SessionReport {
 
 interface SessionContextValue {
   active: boolean
+  ending: boolean
   sessionId: string | null
   report: SessionReport | null
   endSession: () => Promise<void>
@@ -22,6 +23,7 @@ interface SessionContextValue {
 
 const SessionContext = createContext<SessionContextValue>({
   active: false,
+  ending: false,
   sessionId: null,
   report: null,
   endSession: async () => {},
@@ -33,6 +35,7 @@ const SEEN_KEY = "learninglua.lastReport"
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [active, setActive] = useState(false)
+  const [ending, setEnding] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [report, setReport] = useState<SessionReport | null>(null)
 
@@ -87,6 +90,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   )
 
   const endSession = useCallback(async () => {
+    if (ending) return
+    setEnding(true)
     try {
       const response = await fetchJson<{ status: string; report?: SessionReport }>("/api/session/end", {
         method: "POST",
@@ -99,8 +104,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     } finally {
       setActive(false)
       setSessionId(null)
+      setEnding(false)
     }
-  }, [])
+  }, [ending])
 
   const dismissReport = useCallback(() => {
     if (report) window.localStorage.setItem(SEEN_KEY, report.id)
@@ -108,8 +114,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [report])
 
   const value = useMemo(
-    () => ({ active, sessionId, report, endSession, dismissReport, record }),
-    [active, sessionId, report, endSession, dismissReport, record],
+    () => ({ active, ending, sessionId, report, endSession, dismissReport, record }),
+    [active, ending, sessionId, report, endSession, dismissReport, record],
   )
 
   return (

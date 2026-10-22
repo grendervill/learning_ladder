@@ -9,6 +9,7 @@ import "@fontsource-variable/jetbrains-mono"
 import "./styles/tokens.css"
 import "./styles/base.css"
 import { App } from "./App"
+import "./styles/legibility.css"
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Circle,
   GraduationCap,
+  LoaderCircle,
   Lock,
   Sparkles,
 } from "lucide-react"
@@ -48,7 +49,7 @@ function LessonNode({ status }: { status: LessonStatus }) {
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { data: course, isLoading, isError } = useCourse()
-  const { active: sessionActive, endSession } = useSession()
+  const { active: sessionActive, ending: sessionEnding, endSession } = useSession()
   const queryClient = useQueryClient()
   const location = useLocation()
 
@@ -211,11 +212,21 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             type="button"
             className="sidebar-session sidebar-session--button"
             onClick={() => void endSession()}
-            disabled={!sessionActive}
+            disabled={!sessionActive || sessionEnding}
             title={sessionActive ? "Завершить занятие и получить итог" : "Занятие ещё не начато"}
           >
-            <Circle size={8} aria-hidden className={sessionActive ? "session-live" : ""} />
-            <span>{sessionActive ? "Занятие идёт · завершить" : "Сессия не начата"}</span>
+            {sessionEnding ? (
+              <LoaderCircle size={11} className="spin" aria-hidden />
+            ) : (
+              <Circle size={8} aria-hidden className={sessionActive ? "session-live" : ""} />
+            )}
+            <span>
+              {sessionEnding
+                ? "Собираем итог…"
+                : sessionActive
+                  ? "Занятие идёт · завершить"
+                  : "Сессия не начата"}
+            </span>
           </button>
           <ThemeToggle />
         </div>

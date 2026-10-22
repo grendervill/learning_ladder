@@ -1,0 +1,445 @@
+/* Legibility pass: larger small labels and fully visible lesson titles. */
+
+/* Global press feedback */
+button {
+  transition: transform 120ms ease, opacity 120ms ease;
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px) scale(.99);
+}
+
+/* Sidebar */
+.sidebar-chapter__head {
+  font-size: 10.5px;
+}
+
+.sidebar-chapter h2 {
+  font-size: 14.5px;
+}
+
+.sidebar-lesson {
+  min-height: 0;
+  align-items: start;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.sidebar-lesson__title {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.sidebar-lesson__text small {
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.lesson-node {
+  width: 19px;
+  height: 19px;
+  margin-top: 1px;
+}
+
+.sidebar-quiz {
+  font-size: 12px;
+}
+
+.sidebar-quiz small {
+  font-size: 10px;
+}
+
+.sidebar-quiz svg {
+  width: 16px;
+  height: 16px;
+}
+
+.sidebar-progress__top {
+  font-size: 12.5px;
+}
+
+.sidebar-progress__top b {
+  font-size: 12.5px;
+}
+
+.sidebar-progress small {
+  font-size: 10.5px;
+}
+
+.sidebar-footer__link {
+  font-size: 12.5px;
+}
+
+.sidebar-footer__link svg {
+  width: 17px;
+  height: 17px;
+}
+
+.sidebar-session {
+  font-size: 10px;
+}
+
+.sidebar-new__head {
+  font-size: 11.5px;
+}
+
+.sidebar-new p {
+  font-size: 11px;
+}
+
+.sidebar-new__action {
+  font-size: 9.5px;
+}
+
+.sidebar-lock {
+  width: 14px;
+  height: 14px;
+}
+
+.sidebar-arrow {
+  width: 15px;
+  height: 15px;
+}
+
+/* Lesson page labels */
+.lesson-breadcrumb {
+  font-size: 10.5px;
+}
+
+.lesson-kicker {
+  font-size: 11px;
+}
+
+.lesson-meta {
+  font-size: 10.5px;
+}
+
+.lesson-meta svg {
+  width: 15px;
+  height: 15px;
+}
+
+.lesson-tab {
+  font-size: 13px;
+}
+
+.lesson-tab__count {
+  min-width: 19px;
+  height: 19px;
+  font-size: 10px;
+}
+
+.section-kicker {
+  font-size: 11px;
+}
+
+.section-kicker svg {
+  width: 15px;
+  height: 15px;
+}
+
+.lesson-next__note {
+  font-size: 10.5px;
+}
+
+/* Theory rail */
+.theory-rail__head {
+  font-size: 11px;
+}
+
+.theory-rail__head svg {
+  width: 15px;
+  height: 15px;
+}
+
+.theory-rail a {
+  font-size: 12.5px;
+}
+
+.theory-rail__sub {
+  font-size: 11.5px;
+}
+
+/* Quiz */
+.quiz-progress__labels {
+  font-size: 10.5px;
+}
+
+.quiz-question__num {
+  font-size: 11px;
+}
+
+.quiz-question__meta {
+  font-size: 10px;
+}
+
+.quiz-option {
+  font-size: 13.5px;
+}
+
+.quiz-rail__label {
+  font-size: 10px;
+}
+
+.quiz-rail__card strong small {
+  font-size: 11px;
+}
+
+.quiz-rail__note {
+  font-size: 12px;
+}
+
+.quiz-rail__next {
+  font-size: 11.5px;
+}
+
+.quiz-save {
+  font-size: 10px;
+}
+
+.quiz-reveal {
+  font-size: 12px;
+}
+
+/* Practice editor */
+.practice-task-tab {
+  font-size: 12.5px;
+}
+
+.practice-task-tab span {
+  font-size: 10px;
+}
+
+.practice-prompt summary {
+  font-size: 12.5px;
+}
+
+.practice-prompt__files {
+  font-size: 10px;
+}
+
+.practice-prompt__body {
+  font-size: 13px;
+}
+
+.editor-settings {
+  font-size: 10px;
+}
+
+.editor-settings select {
+  font-size: 10px;
+}
+
+.editor-reset {
+  font-size: 10.5px;
+}
+
+.lsp-status {
+  font-size: 9.5px;
+}
+
+.editor-save {
+  font-size: 10px;
+}
+
+.editor-statusbar__hint {
+  font-size: 9.5px;
+}
+
+.editor-toolbar__loading,
+.editor-load-error {
+  font-size: 10.5px;
+}
+
+/* Run console */
+.run-panel__title {
+  font-size: 11px;
+}
+
+.run-panel__title small {
+  font-size: 9.5px;
+}
+
+.run-panel__shortcut {
+  font-size: 9.5px;
+}
+
+.run-panel__clear,
+.run-panel__run {
+  font-size: 10.5px;
+}
+
+.run-inputs summary {
+  font-size: 10px;
+}
+
+.run-inputs__body label {
+  font-size: 9.5px;
+}
+
+.run-inputs__body input,
+.run-inputs__body textarea {
+  font-size: 10.5px;
+}
+
+.run-console__empty,
+.run-console__error {
+  font-size: 10.5px;
+}
+
+.run-console__stdout,
+.run-console__stderr {
+  font-size: 11px;
+}
+
+.run-console__footer {
+  font-size: 9.5px;
+}
+
+/* Terminal */
+.terminal-head__title {
+  font-size: 11px;
+}
+
+.terminal-head__title small {
+  font-size: 10px;
+}
+
+.terminal-head__actions {
+  font-size: 9.5px;
+}
+
+.terminal-output {
+  font-size: 11.5px;
+}
+
+.terminal-exit,
+.terminal-running,
+.terminal-error-line {
+  font-size: 10px;
+}
+
+.terminal-input-row input {
+  font-size: 11.5px;
+}
+
+.terminal-hints {
+  font-size: 9.5px;
+}
+
+.terminal-hints button {
+  font-size: 9.5px;
+}
+
+/* LÖVE preview */
+.love-preview__title {
+  font-size: 11px;
+}
+
+.love-preview__title small {
+  font-size: 9.5px;
+}
+
+.love-start,
+.love-stop,
+.love-restart {
+  font-size: 10.5px;
+}
+
+.love-preview__foot {
+  font-size: 9.5px;
+}
+
+/* Chapter quiz */
+.chapter-passed-note {
+  font-size: 10px;
+}
+
+.chapter-submit {
+  font-size: 12px;
+}
+
+.chapter-submit-error {
+  font-size: 11px;
+}
+
+/* Performance */
+.performance-stats span {
+  font-size: 10px;
+}
+
+.performance-section__head > span {
+  font-size: 11px;
+}
+
+.grade-chip {
+  font-size: 10px;
+}
+
+.grade-row__status,
+.grade-row__attempts {
+  font-size: 10px;
+}
+
+.grade-row__grade {
+  font-size: 13px;
+}
+
+.attempt-row b {
+  font-size: 11px;
+}
+
+.attempt-row p {
+  font-size: 12.5px;
+}
+
+.attempt-row time {
+  font-size: 10px;
+}
+
+.report-item summary b {
+  font-size: 13px;
+}
+
+.report-item summary small {
+  font-size: 10px;
+}
+
+.performance-empty {
+  font-size: 13px;
+}
+
+/* Home */
+.home-label {
+  font-size: 11px;
+}
+
+.home-label svg {
+  width: 14px;
+  height: 14px;
+}
+
+.home-map__count {
+  font-size: 11px;
+}
+
+.home-chapter__num {
+  font-size: 12px;
+}
+
+.home-chapter__body p {
+  font-size: 13px;
+}
+
+.home-chapter__status {
+  font-size: 11.5px;
+}
+
+/* Course states */
+.access-error p,
+.page-skeleton {
+  font-size: 13px;
+}
