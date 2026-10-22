@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router-dom"
-import { ArrowLeft, ArrowRight, BookOpen, CircleCheck, Compass, Sparkles } from "lucide-react"
+import { ArrowLeft, ArrowRight, BookOpen, CircleCheck, Compass, Settings2, Sparkles } from "lucide-react"
 import { useCourse } from "../../lib/useCourse"
 import { AccessError, PageSkeleton } from "./CourseStates"
 import "./CourseHome.css"
@@ -23,6 +23,9 @@ export function CoursePage() {
       <div className="home-course-nav">
         <Link to="/">
           <ArrowLeft size={14} aria-hidden /> Все курсы
+        </Link>
+        <Link to={`/courses/${courseId}/settings`} className="course-settings-link">
+          <Settings2 size={14} aria-hidden /> Настройки курса
         </Link>
       </div>
 

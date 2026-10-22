@@ -18,6 +18,12 @@ import {
 } from "../content/courses"
 import { publicQuiz } from "../content/serialize"
 import type { CourseMeta, CourseMode, CourseSettings, CourseTheme, RuntimeKind } from "../content/types"
+import {
+  constructorPromptPath,
+  readConstructorPrompt,
+  writeConstructorPrompt,
+} from "../courses/constructor-prompt"
+import { DEFAULT_CONSTRUCTOR_PROMPT } from "../courses/prompts"
 import { emitEvent } from "../events"
 
 const PAGE_SIZE = 25
@@ -230,6 +236,26 @@ export function createCoursesRouter(getContext: () => AppContext): Router {
       return
     }
     writeMentorPrompt(context.root ?? process.cwd(), course.id, prompt)
+    res.json({ prompt })
+  })
+
+  router.get("/constructor-prompt", (_req, res) => {
+    const root = getContext().root ?? process.cwd()
+    res.json({
+      prompt: readConstructorPrompt(root),
+      path: constructorPromptPath(root),
+      defaultPrompt: DEFAULT_CONSTRUCTOR_PROMPT,
+    })
+  })
+
+  router.put("/constructor-prompt", (req, res) => {
+    const root = getContext().root ?? process.cwd()
+    const prompt = typeof req.body?.prompt === "string" ? req.body.prompt.trim() : ""
+    if (!prompt) {
+      res.status(400).json({ error: "prompt_empty" })
+      return
+    }
+    writeConstructorPrompt(root, prompt)
     res.json({ prompt })
   })
 

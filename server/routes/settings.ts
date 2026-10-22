@@ -12,6 +12,7 @@ import {
   writeSettings,
 } from "../settings"
 import { readMentorPrompt, mentorPromptPath, writeMentorPrompt } from "../mentor/prompt"
+import { constructorPromptPath, readConstructorPrompt } from "../courses/constructor-prompt"
 import { testMentorConnection, deleteMentorSession, type MentorTestInput } from "../mentor/client"
 
 type CheckStatus = "ok" | "warn" | "fail"
@@ -173,6 +174,14 @@ export function createSettingsRouter(getContext: () => AppContext): Router {
         })
       }
 
+      checks.push({
+        id: "project",
+        group: "Система",
+        label: "Папка проекта",
+        status: "ok",
+        detail: context.root ?? process.cwd(),
+      })
+
       checks.push(toolCheck("lua", "Инструменты", "Lua", "lua", ["-v"], "Установите Lua 5.4+ и добавьте его в PATH."))
       checks.push(toolCheck("luac", "Инструменты", "Lua compiler", "luac", ["-v"], "luac нужен для проверки синтаксиса."))
       checks.push(
@@ -234,33 +243,39 @@ export function createSettingsRouter(getContext: () => AppContext): Router {
         const course = context.getCourse()
         const lessons = Object.keys(course.lessons).length
         const chapters = course.chapters.length
+        const courses = course.courses?.length ?? 1
         const errors = course.errors.length
         checks.push({
           id: "content",
           group: "Данные",
-          label: "Материалы курса",
+          label: "Материалы курсов",
           status: errors ? "warn" : "ok",
-          detail: `уроков: ${lessons} · глав: ${chapters}${errors ? ` · ошибок: ${errors}` : ""}${course.unassigned.length ? ` · новых папок: ${course.unassigned.length}` : ""}`,
-          hint: errors ? "Часть уроков не удалось разобрать: проверьте папки lessons/ и course/." : undefined,
+          detail: `курсов: ${courses} · уроков: ${lessons} · глав: ${chapters}${errors ? ` · ошибок: ${errors}` : ""}${course.unassigned.length ? ` · новых папок: ${course.unassigned.length}` : ""}`,
+          hint: errors ? "Часть материалов не удалось разобрать: проверьте папки courses/." : undefined,
         })
       } catch (error) {
         checks.push({
           id: "content",
           group: "Данные",
-          label: "Материалы курса",
+          label: "Материалы курсов",
           status: "fail",
           detail: error instanceof Error ? error.message : String(error),
         })
       }
 
-      const promptPath = mentorPromptPath()
+      const promptPath = constructorPromptPath(context.root ?? process.cwd())
+      const constructorPrompt = readConstructorPrompt(context.root ?? process.cwd())
       checks.push({
-        id: "mentor-prompt",
-        group: "Наставник",
-        label: "Промпт наставника",
-        status: existsSync(promptPath) ? "ok" : "warn",
-        detail: existsSync(promptPath) ? `${readMentorPrompt().length} символов · ${promptPath}` : promptPath,
-        hint: existsSync(promptPath) ? undefined : "Файл промпта не найден: используется встроенный текст.",
+        id: "constructor-prompt",
+        group: "Конструктор",
+        label: "Промпт конструктора",
+        status: "ok",
+        detail: existsSync(promptPath)
+          ? `${constructorPrompt.length} символов · ${promptPath}`
+          : `встроенный промпт · ${constructorPrompt.length} символов`,
+        hint: existsSync(promptPath)
+          ? undefined
+          : "Файл появится после первого сохранения на вкладке «Конструктор».",
       })
 
       const provider = providerById(settings.network.provider)

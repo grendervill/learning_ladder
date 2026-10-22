@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom"
 import { AppShell } from "./AppShell"
 import { CoursesHome } from "../features/courses/CoursesHome"
 import { CoursePage } from "../features/course/CoursePage"
+import { CourseSettingsPage } from "../features/course/CourseSettingsPage"
 import { LessonPage } from "../features/lesson/LessonPage"
 import { ChapterQuizPage } from "../features/chapter/ChapterQuizPage"
 import { PerformancePage } from "../features/performance/PerformancePage"
@@ -14,6 +15,7 @@ export function AppRoutes() {
       <Route element={<AppShell />}>
         <Route index element={<CoursesHome />} />
         <Route path="courses/:courseId" element={<CoursePage />} />
+        <Route path="courses/:courseId/settings" element={<CourseSettingsPage />} />
         <Route path="courses/:courseId/lessons/:lessonId" element={<LessonPage />} />
         <Route path="courses/:courseId/chapters/:chapterId/quiz" element={<ChapterQuizPage />} />
         <Route path="lessons/:lessonId" element={<LessonPage />} />

@@ -68,7 +68,8 @@ function makeApp() {
   return createApp({
     db,
     course: snapshot,
-    progressPath: resolve(process.cwd(), "does-not-exist.md"),
+    root: dir,
+    progressPath: resolve(dir, "does-not-exist.md"),
   })
 }
 
@@ -125,12 +126,26 @@ describe("settings api", () => {
     expect(res.body.models).toContain("deepseek-flash")
   })
 
+  it("stores the constructor prompt inside the project", async () => {
+    const app = makeApp()
+    const initial = await request(app).get("/api/constructor-prompt")
+    expect(initial.status).toBe(200)
+    expect(initial.body.prompt).toContain("методист")
+    const saved = await request(app)
+      .put("/api/constructor-prompt")
+      .send({ prompt: "Свой конструктор курсов." })
+    expect(saved.status).toBe(200)
+    expect(readFileSync(join(dir, "prompts", "constructor.md"), "utf8")).toContain(
+      "Свой конструктор курсов.",
+    )
+  })
+
   it("reports checks for tools, data and the mentor", async () => {
     const res = await request(makeApp()).get("/api/settings/checks")
     expect(res.status).toBe(200)
     const ids = res.body.checks.map((check: any) => check.id)
     expect(ids).toEqual(
-      expect.arrayContaining(["server", "workspace", "lua", "lsp", "opencode-service", "database", "content", "mentor-prompt", "network"]),
+      expect.arrayContaining(["server", "workspace", "project", "lua", "lsp", "opencode-service", "database", "content", "constructor-prompt", "network"]),
     )
     const { ok, warn, fail } = res.body.summary
     expect(ok + warn + fail).toBe(res.body.checks.length)

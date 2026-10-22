@@ -1,4 +1,8 @@
 .home-course-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   margin-bottom: 18px;
 }
 
@@ -14,6 +18,10 @@
 
 .home-course-nav a:hover {
   color: var(--text);
+}
+
+.home-course-nav .course-settings-link {
+  color: var(--accent);
 }
 
 .home-continue--complete {
