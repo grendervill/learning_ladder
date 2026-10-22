@@ -269,6 +269,29 @@
   margin-left: auto;
 }
 
+.lsp-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 3px;
+  color: #6f8a7a;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.lsp-status--on {
+  color: #8fd8b5;
+}
+
+.lsp-status--connecting {
+  color: #a6b998;
+}
+
+.lsp-status--off {
+  color: #b4917b;
+}
+
 .editor-settings {
   display: inline-flex;
   align-items: center;
@@ -395,6 +418,16 @@
   color: #516b5d;
   font-family: var(--font-mono);
   font-size: 8px;
+}
+
+.run-love-note {
+  margin-top: 18px;
+  padding: 13px 15px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .practice-loading,

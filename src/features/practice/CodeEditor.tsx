@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import { basicSetup } from "codemirror"
 import { EditorState, Compartment } from "@codemirror/state"
 import { EditorView, keymap } from "@codemirror/view"
@@ -6,6 +6,7 @@ import { indentWithTab } from "@codemirror/commands"
 import { StreamLanguage, syntaxHighlighting, HighlightStyle, indentUnit } from "@codemirror/language"
 import { lua } from "@codemirror/legacy-modes/mode/lua"
 import { tags } from "@lezer/highlight"
+import type { LSPClient } from "@codemirror/lsp-client"
 import { indentUnitFor, type IndentMode } from "./useEditorSettings"
 import "./CodeEditor.css"
 
@@ -80,18 +81,27 @@ export function CodeEditor({
   value,
   onChange,
   indent,
+  lspClient,
+  documentUri,
   ariaLabel = "Редактор Lua",
 }: {
   value: string
   onChange: (value: string) => void
   indent: IndentMode
+  lspClient?: LSPClient | null
+  documentUri?: string
   ariaLabel?: string
 }) {
   const host = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const onChangeRef = useRef(onChange)
   const indentCompartment = useRef(new Compartment())
+  const lspCompartment = useRef(new Compartment())
   onChangeRef.current = onChange
+  const lspExtension = useMemo(
+    () => (lspClient && documentUri ? lspClient.plugin(documentUri) : []),
+    [lspClient, documentUri],
+  )
 
   useEffect(() => {
     if (!host.current) return
@@ -103,8 +113,10 @@ export function CodeEditor({
           keymap.of([indentWithTab]),
           StreamLanguage.define(lua),
           syntaxHighlighting(luaHighlight),
+          EditorView.lineWrapping,
           editorTheme,
           indentCompartment.current.of(indentExtensions(indent)),
+          lspCompartment.current.of(lspExtension),
           EditorView.contentAttributes.of({ "aria-label": ariaLabel }),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) onChangeRef.current(update.state.doc.toString())
@@ -138,6 +150,14 @@ export function CodeEditor({
       effects: indentCompartment.current.reconfigure(indentExtensions(indent)),
     })
   }, [indent])
+
+  useEffect(() => {
+    const view = viewRef.current
+    if (!view) return
+    view.dispatch({
+      effects: lspCompartment.current.reconfigure(lspExtension),
+    })
+  }, [lspExtension])
 
   return <div className="code-editor-host" ref={host} />
 }

@@ -16,6 +16,8 @@ import { Markdown } from "../../lib/markdown"
 import { CodeEditor } from "./CodeEditor"
 import { EditorSettings } from "./EditorSettings"
 import { FileTabs } from "./FileTabs"
+import { LspProvider, documentUri, useLspClient } from "./LspProvider"
+import { LspStatus } from "./LspStatus"
 import { RunPanel } from "./RunPanel"
 import { TerminalPanel } from "./TerminalPanel"
 import { useEditorSettings } from "./useEditorSettings"
@@ -25,7 +27,15 @@ type SaveState = "idle" | "saving" | "saved" | "error"
 
 type FileItem = { name: string; content: string }
 
-export function PracticeTab({
+export function PracticeTab(props: { lessonId: string; initialTaskId?: string }) {
+  return (
+    <LspProvider>
+      <PracticeTabInner {...props} />
+    </LspProvider>
+  )
+}
+
+function PracticeTabInner({
   lessonId,
   initialTaskId,
 }: {
@@ -33,6 +43,7 @@ export function PracticeTab({
   initialTaskId?: string
 }) {
   const { data: lesson, isLoading, isError, refetch } = useLesson(lessonId)
+  const { client: lspClient } = useLspClient()
   const [activeTaskId, setActiveTaskId] = useState(initialTaskId ?? "")
   const [files, setFiles] = useState<FileItem[]>([])
   const [activeFile, setActiveFile] = useState("")
@@ -243,6 +254,7 @@ export function PracticeTab({
                 />
               )}
               <div className="editor-toolbar__actions">
+                <LspStatus />
                 <EditorSettings indent={indent} onChange={setIndent} />
                 {task.kind === "project" && activeFile && !starterNames.has(activeFile) && (
                   <button
@@ -296,6 +308,8 @@ export function PracticeTab({
                 value={files.find((file) => file.name === activeFile)?.content ?? ""}
                 onChange={updateFile}
                 indent={indent}
+                lspClient={lspClient}
+                documentUri={documentUri(lessonId, task.id, activeFile)}
                 ariaLabel={`Редактор ${activeFile}`}
               />
             )}

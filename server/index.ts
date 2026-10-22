@@ -1,10 +1,12 @@
 import { createServer, type Server } from "node:http"
 import { createApp } from "./app"
+import { attachLspServer } from "./lsp/server"
 
 const DEFAULT_PORT = 4174
 
 export async function startServer(port = DEFAULT_PORT): Promise<Server> {
   const server = createServer(createApp())
+  attachLspServer(server)
   await new Promise<void>((resolve, reject) => {
     server.once("error", reject)
     server.listen(port, "127.0.0.1", () => {
