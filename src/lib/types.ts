@@ -60,6 +60,7 @@ export interface LessonDetail {
     }>
   } | null
   errors: Array<{ code: string; message: string }>
+  answers: Record<string, number | string>
   access: LessonStatus
   chapterId: string | null
   chapterTitle: string | null

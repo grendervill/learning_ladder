@@ -31,6 +31,7 @@ const lesson = {
     ],
   },
   errors: [],
+  answers: {},
   access: "available",
   chapterId: "foundations",
   chapterTitle: "Основы",

@@ -6,7 +6,6 @@ import {
   ArrowRight,
   BookOpen,
   Code2,
-  GraduationCap,
   ListChecks,
   LockKeyhole,
 } from "lucide-react"
@@ -14,6 +13,7 @@ import { useLesson } from "../../lib/useLesson"
 import type { LessonDetail } from "../../lib/types"
 import { Markdown } from "../../lib/markdown"
 import { PageSkeleton } from "../course/CourseStates"
+import { QuizTab } from "../quiz/QuizTab"
 import { TheoryTab } from "./TheoryTab"
 import "./LessonPage.css"
 
@@ -55,9 +55,7 @@ export function LessonPage({ lessonId }: { lessonId?: string }) {
       )
     }
     if (tab === "questions") {
-      return (
-        <QuestionsPreview lesson={lesson} onPractice={() => setTab("practice")} />
-      )
+      return <QuizTab lessonId={lesson.id} onPractice={() => setTab("practice")} />
     }
     return <PracticePreview lesson={lesson} onQuestions={() => setTab("questions")} />
   }, [lesson, tab])
@@ -193,48 +191,6 @@ function EmptyPanel({ title, text }: { title: string; text: string }) {
       </span>
       <h2>{title}</h2>
       <p>{text}</p>
-    </div>
-  )
-}
-
-function QuestionsPreview({ lesson, onPractice }: { lesson: LessonDetail; onPractice: () => void }) {
-  if (!lesson.quiz) {
-    return <EmptyPanel title="Вопросы ещё не добавлены" text="Квиз появится вместе со следующим обновлением материала." />
-  }
-
-  return (
-    <div className="questions-preview">
-      <div className="questions-preview__head">
-        <div>
-          <span className="section-kicker">
-            <GraduationCap size={13} aria-hidden /> проверь себя
-          </span>
-          <h2>{lesson.quiz.title}</h2>
-          <p>
-            Смешанный квиз: {lesson.quiz.questions.length} вопросов. Тесты и письменные ответы
-            разберёт наставник вместе с практикой.
-          </p>
-        </div>
-        <span className="questions-preview__count">{lesson.quiz.questions.length}</span>
-      </div>
-      <div className="questions-preview__list">
-        {lesson.quiz.questions.map((question, index) => (
-          <div className="question-preview" key={question.id}>
-            <span className="question-preview__num">{String(index + 1).padStart(2, "0")}</span>
-            <div>
-              <p>{question.prompt}</p>
-              <small>
-                {question.type === "single" ? "выбери один ответ" : "письменный ответ"}
-              </small>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="preview-actions">
-        <button type="button" onClick={onPractice}>
-          Перейти к практике <ArrowRight size={14} aria-hidden />
-        </button>
-      </div>
     </div>
   )
 }

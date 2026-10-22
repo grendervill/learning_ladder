@@ -50,8 +50,15 @@ export function createCourseRouter(getContext: () => AppContext): Router {
       return
     }
     const chapter = course.chapters.find((item) => item.lessonIds.includes(lesson.id))
+    const answers = Object.fromEntries(
+      context.db
+        .prepare("select question_id, answer_json from quiz_answers where scope = 'lesson' and scope_id = ?")
+        .all(lesson.id)
+        .map((row: any) => [row.question_id, JSON.parse(row.answer_json)]),
+    )
     res.json({
       ...publicLesson(lesson),
+      answers,
       access: access.lessons[lesson.id],
       chapterId: chapter?.id ?? null,
       chapterTitle: chapter?.title ?? null,
