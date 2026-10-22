@@ -1,5 +1,6 @@
 import { z } from "zod"
-import type { CourseSnapshot } from "../content/types"
+import { parseQuiz } from "../content/quiz"
+import type { CourseSnapshot, Quiz } from "../content/types"
 import {
   createMentorSession as createRealSession,
   deleteMentorSession as deleteRealSession,
@@ -284,6 +285,13 @@ function mockClassification(snapshot: CourseSnapshot, unassigned: string[]): Men
   }
 }
 
+export interface GenerateQuizInput {
+  kind: "lesson" | "chapter"
+  title: string
+  description: string
+  tasks: Array<{ title: string; kind: string }>
+}
+
 export type MentorGenerate = (sessionId: string, prompt: string) => Promise<string>
 export type MentorCreateSession = () => Promise<string>
 export type MentorDeleteSession = (sessionId: string) => Promise<void>
@@ -306,6 +314,7 @@ export interface MentorService {
     snapshot: CourseSnapshot,
     unassigned: string[],
   ) => Promise<MentorClassification>
+  generateQuiz?: (sessionId: string, input: GenerateQuizInput) => Promise<Quiz>
 }
 
 export function createMentorService(options: MentorServiceOptions = {}): MentorService {
@@ -360,6 +369,38 @@ export function createMentorService(options: MentorServiceOptions = {}): MentorS
       } catch {
         throw new Error("mentor_invalid_classification")
       }
+    },
+    async generateQuiz(sessionId, input) {
+      if (mock) {
+        return {
+          title: input.title,
+          questions: [
+            { id: "q1", type: "single", prompt: "Что проверяет эта тема?", options: ["основы", "детали"], correct: 0, explanation: "Основы важнее." },
+            { id: "q2", type: "single", prompt: "Что делать при ошибке?", options: ["проверить", "сдаться"], correct: 0, explanation: "Проверяем." },
+            { id: "q3", type: "text", prompt: "Объясни главную мысль темы.", referenceAnswer: "Ключевая мысль темы.", criteria: ["мысль"] },
+            { id: "q4", type: "text", prompt: "Приведи пример применения.", referenceAnswer: "Пример из практики.", criteria: ["пример"] },
+          ],
+        }
+      }
+      const prompt = `Сгенерируй ${input.kind === "chapter" ? "общий квиз главы" : "квиз урока"} «${input.title}» по материалу ниже.
+Материал:
+${input.description}
+Задания: ${JSON.stringify(input.tasks)}
+
+Требования:
+- ровно 2 тестовых вопроса с 3–4 вариантами и 2 письменных вопроса;
+- правильные ответы и ориентиры для письменных;
+- объяснение для каждого тестового вопроса;
+- верни только JSON:
+{"title":"...","questions":[{"id":"q1","type":"single","prompt":"...","options":["..."],"correct":0,"explanation":"..."},{"id":"q3","type":"text","prompt":"...","referenceAnswer":"...","criteria":["..."]}]}`
+      let raw = await generate(sessionId, prompt)
+      let parsed = parseQuiz(extractJson(raw))
+      if (!parsed.quiz) {
+        raw = await generate(sessionId, `${prompt}\n\nПредыдущий ответ не прошёл валидацию. Верни только валидный JSON 2+2.`)
+        parsed = parseQuiz(extractJson(raw))
+      }
+      if (!parsed.quiz) throw new Error("mentor_invalid_quiz")
+      return parsed.quiz
     },
   }
 }

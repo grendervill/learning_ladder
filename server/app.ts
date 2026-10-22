@@ -12,6 +12,8 @@ import { createSubmitRouter } from "./routes/submit"
 import { createChapterQuizRouter } from "./routes/chapter-quiz"
 import { createMentorAskRouter } from "./routes/mentor-ask"
 import { createSessionRouter } from "./routes/session"
+import { createContentRouter } from "./routes/content"
+import { createEventsRouter } from "./routes/events"
 import { getMentorService, type MentorService } from "./mentor/service"
 
 export interface AppOptions {
@@ -19,13 +21,14 @@ export interface AppOptions {
   course?: CourseSnapshot
   progressPath?: string
   mentor?: MentorService
+  context?: AppContext
 }
 
 export function createApp(options: AppOptions = {}): Express {
   const app = express()
   app.use(express.json({ limit: "2mb" }))
 
-  let context: AppContext | null = null
+  let context: AppContext | null = options.context ?? null
   const getContext = () => {
     if (!context) {
       context =
@@ -49,6 +52,8 @@ export function createApp(options: AppOptions = {}): Express {
   app.use("/api", createChapterQuizRouter(getContext, () => options.mentor ?? getMentorService()))
   app.use("/api", createMentorAskRouter(getContext, () => options.mentor ?? getMentorService()))
   app.use("/api", createSessionRouter(getContext, () => options.mentor ?? getMentorService()))
+  app.use("/api", createContentRouter(getContext, () => options.mentor ?? getMentorService()))
+  app.use("/api", createEventsRouter())
   app.use("/api", createProgressRouter(getContext))
 
   app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

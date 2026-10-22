@@ -1,12 +1,39 @@
 import { createServer, type Server } from "node:http"
 import { createApp } from "./app"
+import { defaultContext } from "./context"
+import { classifyAndApply } from "./content/classify"
+import { startContentWatcher } from "./content/watcher"
+import { emitEvent } from "./events"
 import { attachLspServer } from "./lsp/server"
+import { getMentorService } from "./mentor/service"
 
 const DEFAULT_PORT = 4174
 
 export async function startServer(port = DEFAULT_PORT): Promise<Server> {
-  const server = createServer(createApp())
+  const context = defaultContext()
+  const server = createServer(createApp({ context }))
   attachLspServer(server)
+
+  const watcher = startContentWatcher({
+    root: process.cwd(),
+    onChange: () => {
+      const snapshot = context.refreshCourse?.()
+      emitEvent("course:changed", { version: snapshot?.version ?? null })
+      if (snapshot && snapshot.unassigned.length > 0) {
+        void classifyAndApply(context, getMentorService())
+          .then((result) => {
+            if (result.applied) {
+              emitEvent("course:changed", { version: result.snapshot.version, classified: true })
+            }
+          })
+          .catch((error) => console.error("[content] classification failed", error))
+      }
+    },
+  })
+  server.on("close", () => {
+    void watcher.close()
+  })
+
   await new Promise<void>((resolve, reject) => {
     server.once("error", reject)
     server.listen(port, "127.0.0.1", () => {

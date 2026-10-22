@@ -4,12 +4,14 @@ import { Menu, MoonStar } from "lucide-react"
 import { Sidebar } from "../components/Sidebar"
 import { ThemeToggle } from "../components/ThemeToggle"
 import { SessionProvider } from "../features/session/SessionContext"
+import { useContentEvents } from "../lib/useContentEvents"
 import "./AppShell.css"
 
 export function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const closeSidebar = useCallback(() => setSidebarOpen(false), [])
   const location = useLocation()
+  useContentEvents()
 
   return (
     <SessionProvider>

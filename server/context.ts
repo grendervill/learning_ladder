@@ -8,6 +8,7 @@ import type { CourseSnapshot } from "./content/types"
 export interface AppContext {
   db: DatabaseSync
   getCourse: () => CourseSnapshot
+  refreshCourse?: () => CourseSnapshot
   progressPath: string
 }
 
@@ -22,6 +23,14 @@ export function buildContext(
 
 export function defaultContext(): AppContext {
   const db = getDb()
-  const course = scanCourse(process.cwd())
-  return buildContext(db, course)
+  let course = scanCourse(process.cwd())
+  const base = buildContext(db, course)
+  return {
+    ...base,
+    getCourse: () => course,
+    refreshCourse: () => {
+      course = scanCourse(process.cwd())
+      return course
+    },
+  }
 }

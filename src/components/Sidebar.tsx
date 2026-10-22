@@ -9,6 +9,8 @@ import {
   Sparkles,
 } from "lucide-react"
 import { useEffect } from "react"
+import { useQueryClient } from "@tanstack/react-query"
+import { fetchJson } from "../lib/api"
 import { useCourse } from "../lib/useCourse"
 import { useSession } from "../features/session/SessionContext"
 import type { LessonStatus } from "../lib/types"
@@ -47,6 +49,7 @@ function LessonNode({ status }: { status: LessonStatus }) {
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { data: course, isLoading, isError } = useCourse()
   const { active: sessionActive, endSession } = useSession()
+  const queryClient = useQueryClient()
   const location = useLocation()
 
   useEffect(() => {
@@ -183,6 +186,17 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
                 <b>{course.unassigned.length}</b>
               </div>
               <p>Учитель распределит их по главам на занятии.</p>
+              <button
+                type="button"
+                className="sidebar-new__action"
+                onClick={() => {
+                  void fetchJson("/api/content/classify", { method: "POST" }).then(() =>
+                    queryClient.invalidateQueries({ queryKey: ["course"] }),
+                  )
+                }}
+              >
+                Распределить сейчас
+              </button>
             </section>
           )}
         </nav>
