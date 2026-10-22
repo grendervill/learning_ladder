@@ -94,12 +94,20 @@ function buildReviewPrompt(request: MentorReviewRequest): string {
       const files = task.files
         .map((file) => `--- ${file.name} ---\n${file.content}`)
         .join("\n")
+      const terminal = (task.terminalHistory ?? [])
+        .map(
+          (entry) =>
+            `$ ${entry.command}\n${entry.stdout}${entry.stderr ? `\n[stderr] ${entry.stderr}` : ""}\n(exit ${entry.exitCode})`,
+        )
+        .join("\n\n")
       return `### Задание ${task.taskId} · ${task.title} (${task.kind})
 Описание: ${task.prompt}
 Код ученика:
-${files}
+${files || "(файлов нет)"}
 Последний запуск:
-${formatRun(task.lastRun)}`
+${formatRun(task.lastRun)}
+История терминала:
+${terminal || "(команд не было)"}`
     })
     .join("\n\n")
 

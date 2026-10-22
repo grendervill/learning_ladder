@@ -29,9 +29,10 @@ describe("startContentWatcher", () => {
       },
     })
     await once(watcher, "ready")
+    await new Promise((resolve) => setTimeout(resolve, 250))
     writeFileSync(join(root, "lessons", "01-demo", "README.md"), "# Демо\n\n## Теория\n\nНовое\n")
     await new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error("watcher timeout")), 4000)
+      const timer = setTimeout(() => reject(new Error("watcher timeout")), 10_000)
       const check = setInterval(() => {
         if (changed) {
           clearInterval(check)

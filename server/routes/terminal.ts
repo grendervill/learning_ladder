@@ -1,6 +1,7 @@
 import { Router } from "express"
 import type { AppContext } from "../context"
 import { accessFor } from "../access-data"
+import { isLessonAccessible } from "../access"
 import { runTerminalCommand } from "../terminal/runner"
 import { workspacePath, writeTaskFiles } from "../lua/workspace"
 
@@ -15,7 +16,9 @@ function findTerminalTask(context: AppContext, lessonId: string, taskId: string)
   const lesson = course.lessons[lessonId]
   if (!lesson) return { error: "lesson_not_found" as const }
   const access = accessFor(context.db, course)
-  if (access.lessons[lessonId] === "locked") return { error: "lesson_locked" as const }
+  if (!isLessonAccessible(course, lessonId) || access.lessons[lessonId] === "locked") {
+    return { error: "lesson_locked" as const }
+  }
   const task = lesson.tasks.find((item) => item.id === taskId)
   if (!task) return { error: "task_not_found" as const }
   if (task.kind !== "terminal") return { error: "not_a_terminal_task" as const }

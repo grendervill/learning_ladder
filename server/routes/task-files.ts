@@ -1,8 +1,10 @@
 import { Router } from "express"
 import type { AppContext } from "../context"
 import { accessFor } from "../access-data"
+import { isLessonAccessible } from "../access"
 import type { TaskContent, TaskFile } from "../content/types"
 import { resetTaskWorkspace } from "../lua/workspace"
+import { mergeTaskFiles } from "../files"
 
 const MAX_FILE_BYTES = 512 * 1024
 
@@ -23,24 +25,16 @@ function loadSavedFiles(context: AppContext, lessonId: string, taskId: string): 
   return new Map(rows.map((row) => [row.file_name, row.content]))
 }
 
-function mergeFiles(task: TaskContent, saved: Map<string, string>): TaskFile[] {
-  const starterNames = new Set(task.files.map((file) => file.name))
-  const files = task.files.map((file) => ({
-    name: file.name,
-    content: saved.get(file.name) ?? file.content,
-  }))
-  for (const [name, content] of saved) {
-    if (!starterNames.has(name)) files.push({ name, content })
-  }
-  return files
-}
+
 
 function findTask(context: AppContext, lessonId: string, taskId: string) {
   const course = context.getCourse()
   const lesson = course.lessons[lessonId]
   if (!lesson) return { error: "lesson_not_found" as const }
   const access = accessFor(context.db, course)
-  if (access.lessons[lessonId] === "locked") return { error: "lesson_locked" as const }
+  if (!isLessonAccessible(course, lessonId) || access.lessons[lessonId] === "locked") {
+    return { error: "lesson_locked" as const }
+  }
   const task = lesson.tasks.find((item) => item.id === taskId)
   if (!task) return { error: "task_not_found" as const }
   return { course, lesson, task }
@@ -58,7 +52,10 @@ export function createTaskFilesRouter(getContext: () => AppContext): Router {
     }
     const saved = loadSavedFiles(context, req.params.lessonId, req.params.taskId)
     res.json({
-      files: mergeFiles(found.task, saved),
+      files: mergeTaskFiles(
+        found.task.files,
+        [...saved].map(([name, content]) => ({ name, content })),
+      ),
       starterFiles: found.task.files,
       kind: found.task.kind,
     })

@@ -61,6 +61,15 @@ export function createSessionRouter(
     }
   })
 
+  router.post("/session/heartbeat", (req, res) => {
+    const context = getContext()
+    recordActivity(context, {
+      sessionId: typeof req.body?.sessionId === "string" ? req.body.sessionId : undefined,
+      kind: "heartbeat",
+    })
+    res.json({ ok: true })
+  })
+
   router.get("/session/current", (_req, res) => {
     const context = getContext()
     res.json({

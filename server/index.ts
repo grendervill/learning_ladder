@@ -6,6 +6,7 @@ import { startContentWatcher } from "./content/watcher"
 import { emitEvent } from "./events"
 import { attachLspServer } from "./lsp/server"
 import { getMentorService } from "./mentor/service"
+import { finalizeStaleSessions } from "./sessions/lifecycle"
 
 const DEFAULT_PORT = 4174
 
@@ -30,7 +31,15 @@ export async function startServer(port = DEFAULT_PORT): Promise<Server> {
       }
     },
   })
+  const sessionSweep = setInterval(() => {
+    void finalizeStaleSessions(context, getMentorService()).catch((error) =>
+      console.error("[session] idle sweep failed", error),
+    )
+  }, 60_000)
+  sessionSweep.unref()
+
   server.on("close", () => {
+    clearInterval(sessionSweep)
     void watcher.close()
   })
 

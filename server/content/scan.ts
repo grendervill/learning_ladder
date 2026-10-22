@@ -76,8 +76,17 @@ export function scanCourse(root: string): CourseSnapshot {
       if (!existsSync(readmePath)) {
         lessonErrors.push(error("lesson_missing_readme", "В папке урока нет README.md", { lessonId, path: readmePath }))
       } else {
-        markdown = readFileSync(readmePath, "utf8")
-        record(`lessons/${lessonId}/README.md`, markdown)
+        try {
+          markdown = readFileSync(readmePath, "utf8")
+          record(`lessons/${lessonId}/README.md`, markdown)
+        } catch (cause) {
+          lessonErrors.push(
+            error("lesson_read_error", `Не удалось прочитать README.md: ${String(cause)}`, {
+              lessonId,
+              path: readmePath,
+            }),
+          )
+        }
       }
 
       const split = splitTheory(markdown, lessonId)

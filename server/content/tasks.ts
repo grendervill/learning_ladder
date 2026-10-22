@@ -71,7 +71,12 @@ function parseSingleTask(
 ): TaskContent {
   const taskPath = join(lessonDir, "tasks", fileName)
   const id = basename(fileName, extname(fileName))
-  const content = readText(taskPath)
+  let content = ""
+  try {
+    content = readText(taskPath)
+  } catch (cause) {
+    addError(errors, lessonId, "task_read_error", `Не удалось прочитать ${fileName}: ${String(cause)}`, taskPath)
+  }
   const prompt = leadingComments(content)
   const sidecarPath = join(lessonDir, "tasks", `${id}.task.json`)
   const metadata = readMetadata(sidecarPath, errors, lessonId, id)
@@ -130,7 +135,11 @@ function parseFolderTask(
       addError(errors, lessonId, "task_file_missing", `Задание ${folderName}: нет файла ${name}`, path)
       continue
     }
-    files.push({ name, content: readText(path) })
+    try {
+      files.push({ name, content: readText(path) })
+    } catch (cause) {
+      addError(errors, lessonId, "task_read_error", `Не удалось прочитать ${name}: ${String(cause)}`, path)
+    }
   }
 
   const kind = metadata.kind ?? "code"

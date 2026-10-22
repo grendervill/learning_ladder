@@ -136,14 +136,16 @@ describe("mentor service", () => {
 })
 
 describe("mentor guard", () => {
-  it("detects only long code blocks", () => {
+  it("detects long blocks and short function solutions", () => {
     expect(containsReadyCode("```lua\nlocal x = 1\n```")).toBe(false)
+    expect(containsReadyCode("```lua\nlocal function f() return 1 end\nlocal function g() return 2 end\n```")).toBe(true)
     expect(containsReadyCode("```lua\nlocal x = 1\nlocal y = 2\nlocal z = 3\n```")).toBe(true)
     expect(containsReadyCode("Инлайн `type(42)` разрешён.")).toBe(false)
   })
 
-  it("strips long code blocks but keeps inline code", () => {
-    const text = "```lua\nlocal a = 1\nlocal b = 2\nlocal c = 3\n```\nНо `type(42)` — это number."
+  it("strips ready blocks but keeps inline code", () => {
+    const text =
+      "```lua\nlocal function f() return 1 end\nlocal function g() return 2 end\n```\nНо `type(42)` — это number."
     const result = stripReadyCode(text)
     expect(result).toContain("[фрагмент скрыт")
     expect(result).toContain("`type(42)`")

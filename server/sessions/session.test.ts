@@ -5,7 +5,13 @@ import { buildContext } from "../context"
 import { migrate, openDatabase } from "../db"
 import type { MentorService } from "../mentor/service"
 import type { CourseSnapshot, LessonContent } from "../content/types"
-import { finalizeSession, getLastReport, recordActivity, startSession } from "./lifecycle"
+import {
+  finalizeSession,
+  finalizeStaleSessions,
+  getLastReport,
+  recordActivity,
+  startSession,
+} from "./lifecycle"
 
 function lesson(id: string): LessonContent {
   return {
@@ -89,6 +95,28 @@ describe("study sessions", () => {
     const result = await finalizeSession(ctx, mentor({ summarizeSession: summarize }), session.id)
     expect(result.status).toBe("discarded")
     expect(summarize).not.toHaveBeenCalled()
+  })
+
+  it("clears the mentor session when a visit is discarded", async () => {
+    const ctx = context()
+    const session = startSession(ctx)
+    ctx.db.prepare("update study_sessions set mentor_session_id = 'm' where id = ?").run(session.id)
+    const deleteSession = vi.fn(async () => {})
+    const result = await finalizeSession(ctx, mentor({ deleteSession }), session.id)
+    expect(deleteSession).toHaveBeenCalledWith("m")
+    expect(result.mentor_session_id).toBeNull()
+  })
+
+  it("finalizes sessions idle longer than 30 minutes", async () => {
+    const ctx = context()
+    const session = startSession(ctx)
+    ctx.db
+      .prepare("update study_sessions set started_at = ? where id = ?")
+      .run(new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), session.id)
+    const count = await finalizeStaleSessions(ctx, mentor())
+    expect(count).toBe(1)
+    const row = ctx.db.prepare("select status from study_sessions where id = ?").get(session.id) as any
+    expect(row.status).toBe("discarded")
   })
 
   it("creates a report after meaningful activity", async () => {

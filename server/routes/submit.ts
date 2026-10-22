@@ -1,9 +1,11 @@
 import { Router } from "express"
 import type { AppContext } from "../context"
 import { accessFor } from "../access-data"
+import { isLessonAccessible } from "../access"
 import type { MentorService } from "../mentor/service"
 import type { MentorReviewRequest, MentorRun, MentorTaskInput } from "../mentor/types"
 import { acquireMentorSession, recordActivity } from "../sessions/lifecycle"
+import { mergeTaskFiles } from "../files"
 
 function loadAnswers(context: AppContext, lessonId: string): Record<string, number | string> {
   return Object.fromEntries(
@@ -19,9 +21,23 @@ function loadFiles(context: AppContext, lessonId: string, taskId: string, starte
     .prepare("select file_name as name, content from task_files where lesson_id = ? and task_id = ?")
     .all(lessonId, taskId)
     .map((row: any) => ({ name: String(row.name), content: String(row.content) }))
-  if (!saved.length) return starter
-  const map = new Map(saved.map((file) => [file.name, file.content]))
-  return starter.map((file) => ({ ...file, content: map.get(file.name) ?? file.content }))
+  return mergeTaskFiles(starter, saved)
+}
+
+function terminalHistory(context: AppContext, lessonId: string, taskId: string) {
+  return context.db
+    .prepare(
+      `select command, stdout, stderr, exit_code as exitCode from terminal_commands
+       where lesson_id = ? and task_id = ? order by id desc limit 20`,
+    )
+    .all(lessonId, taskId)
+    .reverse()
+    .map((row: any) => ({
+      command: String(row.command),
+      stdout: String(row.stdout ?? ""),
+      stderr: String(row.stderr ?? ""),
+      exitCode: Number(row.exitCode ?? 0),
+    }))
 }
 
 function lastRun(context: AppContext, lessonId: string, taskId: string): MentorRun | null {
@@ -51,12 +67,22 @@ export function createSubmitRouter(getContext: () => AppContext, getMentor: () =
       return
     }
     const access = accessFor(context.db, course)
-    if (access.lessons[lesson.id] === "locked") {
+    if (!isLessonAccessible(course, lesson.id) || access.lessons[lesson.id] === "locked") {
       res.status(403).json({ error: "lesson_locked" })
       return
     }
     if (!lesson.quiz) {
       res.status(400).json({ error: "quiz_missing" })
+      return
+    }
+    const blockingContentErrors = lesson.errors.filter((error) =>
+      ["lesson_missing_readme", "lesson_missing_tasks", "lesson_read_error"].includes(error.code),
+    )
+    if (lesson.tasks.length === 0 || blockingContentErrors.length > 0) {
+      res.status(400).json({
+        error: "lesson_incomplete",
+        errors: blockingContentErrors.map((error) => error.code),
+      })
       return
     }
 
@@ -68,6 +94,7 @@ export function createSubmitRouter(getContext: () => AppContext, getMentor: () =
       kind: task.kind,
       files: loadFiles(context, lesson.id, task.id, task.files),
       lastRun: lastRun(context, lesson.id, task.id),
+      terminalHistory: task.kind === "terminal" ? terminalHistory(context, lesson.id, task.id) : undefined,
     }))
     const quiz = lesson.quiz.questions.map((question) => ({
       id: question.id,
@@ -130,7 +157,15 @@ export function createSubmitRouter(getContext: () => AppContext, getMentor: () =
       Object.fromEntries(tasks.map((task) => [task.taskId, task.files])),
     )
     const attemptRuns = JSON.stringify(
-      Object.fromEntries(tasks.map((task) => [task.taskId, task.lastRun])),
+      Object.fromEntries(
+        tasks.map((task) => [
+          task.taskId,
+          {
+            lastRun: task.lastRun ?? null,
+            terminalHistory: task.terminalHistory ?? [],
+          },
+        ]),
+      ),
     )
     const attemptQuiz = JSON.stringify(answers)
 

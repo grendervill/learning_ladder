@@ -194,10 +194,13 @@ export async function finalizeSession(
   if (session.status === "completed" || session.status === "completed_with_warnings") return session
 
   if (!hasMeaningfulActivity(context, sessionId)) {
+    if (session.mentor_session_id) {
+      await mentor.deleteSession(session.mentor_session_id).catch(() => {})
+    }
     context.db
-      .prepare("update study_sessions set status = 'discarded', ended_at = ? where id = ?")
+      .prepare("update study_sessions set status = 'discarded', ended_at = ?, mentor_session_id = null where id = ?")
       .run(new Date().toISOString(), sessionId)
-    return { ...session, status: "discarded" }
+    return { ...session, status: "discarded", mentor_session_id: null }
   }
 
   context.db
@@ -251,6 +254,28 @@ export async function finalizeSession(
     mentor_session_id: null,
     error,
   }
+}
+
+export async function finalizeStaleSessions(
+  context: AppContext,
+  mentor: MentorService,
+  idleMs = 30 * 60 * 1000,
+): Promise<number> {
+  const cutoff = new Date(Date.now() - idleMs).toISOString()
+  const rows = context.db
+    .prepare(
+      `select id from study_sessions
+       where status in ('active', 'finalizing')
+         and coalesce(
+           (select max(created_at) from activity_events where session_id = study_sessions.id),
+           started_at
+         ) < ?`,
+    )
+    .all(cutoff) as Array<{ id: string }>
+  for (const row of rows) {
+    await finalizeSession(context, mentor, row.id)
+  }
+  return rows.length
 }
 
 export function getLastReport(db: AppContext["db"]): StudySession | null {

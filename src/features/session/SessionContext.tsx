@@ -65,6 +65,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  useEffect(() => {
+    if (!sessionId) return
+    const timer = window.setInterval(() => {
+      void fetchJson("/api/session/heartbeat", {
+        method: "POST",
+        body: JSON.stringify({ sessionId }),
+      }).catch(() => {})
+    }, 60_000)
+    return () => window.clearInterval(timer)
+  }, [sessionId])
+
   const record = useCallback(
     (kind: string, meta: { lessonId?: string; taskId?: string; meta?: unknown } = {}) => {
       void fetchJson("/api/session/activity", {

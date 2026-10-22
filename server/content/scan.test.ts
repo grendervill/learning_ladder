@@ -56,6 +56,12 @@ describe("scanCourse", () => {
     expect(course.errors.some((error) => error.lessonId === "03-broken" && error.code === "lesson_missing_tasks")).toBe(true)
   })
 
+  it("reports an unreadable README without throwing", () => {
+    const course = scanCourse(fixtureRoot)
+    const lesson = course.lessons["07-badread"]
+    expect(lesson.errors.some((error) => error.code === "lesson_read_error")).toBe(true)
+  })
+
   it("marks lessons that are not in a chapter as unassigned", () => {
     const course = scanCourse(fixtureRoot)
     expect(course.unassigned).toEqual(expect.arrayContaining(["04-unassigned", "05-folder"]))

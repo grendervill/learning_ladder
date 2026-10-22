@@ -64,6 +64,7 @@ const snapshot: CourseSnapshot = {
     "02-variables-types": lesson("02-variables-types", "Переменные и типы"),
     "03-control-flow": lesson("03-control-flow", "Управление потоком"),
     "04-functions": lesson("04-functions", "Функции"),
+    "99-unassigned": lesson("99-unassigned", "Новая тема"),
   },
   unassigned: [],
   errors: [],
@@ -91,6 +92,12 @@ describe("course api", () => {
     expect(res.body.tasks).toHaveLength(1)
     expect(res.body.quiz.questions).toHaveLength(4)
     expect(res.body.quiz.questions[0].correct).toBeUndefined()
+  })
+
+  it("does not open a lesson that is not assigned to a chapter", async () => {
+    const res = await request(app()).get("/api/lessons/99-unassigned")
+    expect(res.status).toBe(403)
+    expect(res.body.error).toBe("lesson_locked")
   })
 
   it("returns progress with grades and attempts", async () => {

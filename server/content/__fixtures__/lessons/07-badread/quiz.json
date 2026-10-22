@@ -1,0 +1,9 @@
+{
+  "title": "Квиз",
+  "questions": [
+    {"id": "q1", "type": "single", "prompt": "1?", "options": ["a", "b"], "correct": 0, "explanation": "a"},
+    {"id": "q2", "type": "single", "prompt": "2?", "options": ["a", "b"], "correct": 1, "explanation": "b"},
+    {"id": "q3", "type": "text", "prompt": "3?", "referenceAnswer": "a", "criteria": ["a"]},
+    {"id": "q4", "type": "text", "prompt": "4?", "referenceAnswer": "b", "criteria": ["b"]}
+  ]
+}

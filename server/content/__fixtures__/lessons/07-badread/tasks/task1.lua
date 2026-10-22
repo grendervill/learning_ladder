@@ -1,0 +1,2 @@
+-- task
+print(1)

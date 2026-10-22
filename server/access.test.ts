@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { computeAccess, type ChapterProgressRow, type LessonProgressRow } from "./access"
+import { computeAccess, isLessonAccessible, type ChapterProgressRow, type LessonProgressRow } from "./access"
 import type { CourseSnapshot, LessonContent } from "./content/types"
 
 function lesson(id: string): LessonContent {
@@ -89,6 +89,15 @@ describe("computeAccess", () => {
   it("never relocks an already available lesson", () => {
     const access = computeAccess(snapshot, [available("02")], [])
     expect(access.lessons["02"]).toBe("available")
+  })
+
+  it("treats a folder outside all chapters as inaccessible", () => {
+    const withExtra: CourseSnapshot = {
+      ...snapshot,
+      lessons: { ...snapshot.lessons, "99-new": lesson("99-new") },
+    }
+    expect(isLessonAccessible(withExtra, "99-new")).toBe(false)
+    expect(isLessonAccessible(withExtra, "01")).toBe(true)
   })
 
   it("keeps in-progress status and exposes the next lesson", () => {

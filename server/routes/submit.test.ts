@@ -40,6 +40,36 @@ function lesson(id: string): LessonContent {
   }
 }
 
+const variables = lesson("02-variables-types")
+variables.tasks.push({
+  id: "terminal",
+  title: "Терминал",
+  prompt: "Осмотрись",
+  kind: "terminal",
+  entry: "",
+  files: [],
+  args: [],
+  stdin: "",
+  timeoutMs: 3000,
+})
+variables.tasks.push({
+  id: "project",
+  title: "Проект",
+  prompt: "Собери проект",
+  kind: "project",
+  entry: "main.lua",
+  files: [{ name: "main.lua", content: "print('project')" }],
+  args: [],
+  stdin: "",
+  timeoutMs: 3000,
+})
+
+const incomplete: LessonContent = {
+  ...lesson("04-incomplete"),
+  tasks: [],
+  errors: [{ code: "lesson_missing_tasks", message: "Нет заданий" }],
+}
+
 const snapshot: CourseSnapshot = {
   version: "test",
   chapters: [
@@ -47,15 +77,16 @@ const snapshot: CourseSnapshot = {
       id: "foundations",
       title: "Основы",
       description: "",
-      lessonIds: ["01-hello-lua", "02-variables-types", "03-control-flow"],
+      lessonIds: ["01-hello-lua", "02-variables-types", "03-control-flow", "04-incomplete"],
       quiz,
       errors: [],
     },
   ],
   lessons: {
     "01-hello-lua": lesson("01-hello-lua"),
-    "02-variables-types": lesson("02-variables-types"),
+    "02-variables-types": variables,
     "03-control-flow": lesson("03-control-flow"),
+    "04-incomplete": incomplete,
   },
   unassigned: [],
   errors: [],
@@ -81,7 +112,7 @@ function fakeMentor(grade: number): MentorService {
   }
 }
 
-function makeApp(grade: number) {
+function makeApp(grade: number, mentorOverride?: MentorService) {
   const db = openDatabase(":memory:")
   migrate(db)
   return {
@@ -90,7 +121,7 @@ function makeApp(grade: number) {
       db,
       course: snapshot,
       progressPath: resolve(process.cwd(), "PROGRESS.md"),
-      mentor: fakeMentor(grade),
+      mentor: mentorOverride ?? fakeMentor(grade),
     }),
   }
 }
@@ -117,6 +148,56 @@ describe("lesson submit", () => {
     expect(lesson.body.quiz.questions[0].correct).toBe(0)
   })
 
+  it("includes project extra files in the mentor request and attempt snapshot", async () => {
+    const captured: Array<{ tasks: Array<{ taskId: string; files: Array<{ name: string }> }> }> = []
+    const base = fakeMentor(4)
+    const mentor: MentorService = {
+      ...base,
+      reviewLesson: async (_sessionId, request) => {
+        captured.push(request as any)
+        return base.reviewLesson(_sessionId, request)
+      },
+    }
+    const { db, app } = makeApp(4, mentor)
+    db.prepare(
+      "insert into task_files (lesson_id, task_id, file_name, content, updated_at) values (?, ?, ?, ?, ?)",
+    ).run("02-variables-types", "project", "notes.md", "план проекта", new Date().toISOString())
+
+    const res = await request(app).post("/api/lessons/02-variables-types/submit").send({})
+    expect(res.status).toBe(200)
+    const project = captured[0].tasks.find((task) => task.taskId === "project")
+    expect(project?.files.some((file) => file.name === "notes.md")).toBe(true)
+
+    const attempt = db.prepare("select * from attempts order by id desc limit 1").get() as any
+    const code = JSON.parse(attempt.code_json)
+    expect(code.project.some((file: any) => file.name === "notes.md")).toBe(true)
+  })
+
+  it("sends terminal history to the mentor and stores it in the attempt", async () => {
+    const captured: Array<{ tasks: Array<{ taskId: string; terminalHistory?: Array<{ command: string }> }> }> = []
+    const base = fakeMentor(4)
+    const mentor: MentorService = {
+      ...base,
+      reviewLesson: async (_sessionId, request) => {
+        captured.push(request as any)
+        return base.reviewLesson(_sessionId, request)
+      },
+    }
+    const { db, app } = makeApp(4, mentor)
+    db.prepare(
+      `insert into terminal_commands (lesson_id, task_id, command, stdout, stderr, exit_code, created_at)
+       values (?, ?, ?, ?, ?, ?, ?)`,
+    ).run("02-variables-types", "terminal", "pwd", "/workspace\n", "", 0, new Date().toISOString())
+
+    await request(app).post("/api/lessons/02-variables-types/submit").send({})
+    const terminal = captured[0].tasks.find((task) => task.taskId === "terminal")
+    expect(terminal?.terminalHistory?.[0].command).toBe("pwd")
+
+    const attempt = db.prepare("select * from attempts order by id desc limit 1").get() as any
+    const runs = JSON.parse(attempt.runs_json)
+    expect(runs.terminal.terminalHistory[0].command).toBe("pwd")
+  })
+
   it("does not unlock on grade 3", async () => {
     const { app } = makeApp(3)
     const res = await request(app).post("/api/lessons/02-variables-types/submit").send({})
@@ -124,6 +205,16 @@ describe("lesson submit", () => {
     expect(res.body.passed).toBe(false)
     const course = await request(app).get("/api/course")
     expect(course.body.access.lessons["03-control-flow"]).toBe("locked")
+  })
+
+  it("refuses to submit an incomplete lesson", async () => {
+    const { db, app } = makeApp(4)
+    db.prepare(
+      "insert into lesson_progress (lesson_id, status, attempts) values ('04-incomplete', 'available', 0)",
+    ).run()
+    const res = await request(app).post("/api/lessons/04-incomplete/submit").send({})
+    expect(res.status).toBe(400)
+    expect(res.body.error).toBe("lesson_incomplete")
   })
 
   it("refuses to submit a locked lesson", async () => {

@@ -1,6 +1,7 @@
 import { Router } from "express"
 import type { AppContext } from "../context"
 import { accessFor } from "../access-data"
+import { isLessonAccessible } from "../access"
 import { publicLesson, publicQuiz } from "../content/serialize"
 
 export function createCourseRouter(getContext: () => AppContext): Router {
@@ -45,7 +46,7 @@ export function createCourseRouter(getContext: () => AppContext): Router {
       return
     }
     const access = accessFor(context.db, course)
-    if (access.lessons[lesson.id] === "locked") {
+    if (!isLessonAccessible(course, lesson.id) || access.lessons[lesson.id] === "locked") {
       res.status(403).json({ error: "lesson_locked" })
       return
     }

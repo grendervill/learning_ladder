@@ -2,19 +2,19 @@ import { randomUUID } from "node:crypto"
 import { Router } from "express"
 import type { AppContext } from "../context"
 import { accessFor } from "../access-data"
+import { isLessonAccessible } from "../access"
 import type { MentorService } from "../mentor/service"
 import type { MentorContext, MentorRun } from "../mentor/types"
 import type { TaskFile } from "../content/types"
 import { acquireMentorSession, recordActivity } from "../sessions/lifecycle"
+import { mergeTaskFiles } from "../files"
 
 function savedFiles(context: AppContext, lessonId: string, taskId: string, starter: TaskFile[]): TaskFile[] {
   const saved = context.db
     .prepare("select file_name as name, content from task_files where lesson_id = ? and task_id = ?")
     .all(lessonId, taskId)
     .map((row: any) => ({ name: String(row.name), content: String(row.content) }))
-  if (!saved.length) return starter
-  const map = new Map(saved.map((file) => [file.name, file.content]))
-  return starter.map((file) => ({ ...file, content: map.get(file.name) ?? file.content }))
+  return mergeTaskFiles(starter, saved)
 }
 
 function lastRun(context: AppContext, lessonId: string, taskId: string): MentorRun | null {
@@ -53,7 +53,7 @@ export function createMentorAskRouter(
         return
       }
       const access = accessFor(context.db, course)
-      if (access.lessons[lessonId] === "locked") {
+      if (!isLessonAccessible(course, lessonId) || access.lessons[lessonId] === "locked") {
         res.status(403).json({ error: "lesson_locked" })
         return
       }

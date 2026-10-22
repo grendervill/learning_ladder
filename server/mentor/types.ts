@@ -11,6 +11,13 @@ export interface MentorRun {
   syntaxError?: boolean
 }
 
+export interface MentorTerminalEntry {
+  command: string
+  stdout: string
+  stderr: string
+  exitCode: number
+}
+
 export interface MentorTaskInput {
   taskId: string
   title: string
@@ -18,6 +25,7 @@ export interface MentorTaskInput {
   kind: string
   files: MentorFile[]
   lastRun?: MentorRun | null
+  terminalHistory?: MentorTerminalEntry[]
 }
 
 export interface MentorQuizQuestion {

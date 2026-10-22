@@ -21,6 +21,10 @@ export interface AccessState {
   nextChapterQuizId: string | null
 }
 
+export function isLessonAccessible(snapshot: CourseSnapshot, lessonId: string): boolean {
+  return snapshot.chapters.some((chapter) => chapter.lessonIds.includes(lessonId))
+}
+
 export function computeAccess(
   snapshot: CourseSnapshot,
   lessonProgress: LessonProgressRow[],

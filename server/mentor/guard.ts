@@ -1,20 +1,26 @@
-const FENCED_CODE = /```[^\n]*\n([\s\S]*?)```/g
+const FENCED_CODE = /```([^\n]*)\n([\s\S]*?)```/g
+
+function isReadyBlock(language: string, body: string): boolean {
+  const lines = body.split(/\r?\n/).filter((line) => line.trim().length > 0)
+  if (lines.length > 2) return true
+  if (/\bfunction\b/.test(body) && /\bend\b/.test(body)) return true
+  if (/^\s*lua\s*$/i.test(language) && lines.length > 1) return true
+  return false
+}
 
 export function containsReadyCode(text: string): boolean {
   FENCED_CODE.lastIndex = 0
   let match: RegExpExecArray | null
   while ((match = FENCED_CODE.exec(text))) {
-    const lines = match[1].split(/\r?\n/).filter((line) => line.trim().length > 0)
-    if (lines.length > 2) return true
+    if (isReadyBlock(match[1], match[2])) return true
   }
   return false
 }
 
 export function stripReadyCode(text: string): string {
-  return text.replace(FENCED_CODE, (block, body: string) => {
-    const lines = body.split(/\r?\n/).filter((line) => line.trim().length > 0)
-    return lines.length > 2 ? "[фрагмент скрыт — попробуй собрать сам]" : block
-  })
+  return text.replace(FENCED_CODE, (block, language: string, body: string) =>
+    isReadyBlock(language, body) ? "[фрагмент скрыт — попробуй собрать сам]" : block,
+  )
 }
 
 export function sanitizeMentorText<T>(value: T): T {
