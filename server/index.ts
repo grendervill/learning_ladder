@@ -76,7 +76,7 @@ export async function startServer(port = DEFAULT_PORT): Promise<Server> {
       staticRoot: codeRoot,
     }),
   )
-  attachLspServer(server)
+  attachLspServer(server, () => manager.getContext())
 
   const sessionSweep = setInterval(() => {
     void finalizeStaleSessions(manager.getContext(), getMentorService()).catch((error) =>

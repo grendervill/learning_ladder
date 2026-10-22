@@ -44,8 +44,11 @@ export function PracticeTab(props: {
   initialTaskId?: string
   onQuestions?: () => void
 }) {
+  const { data: lesson } = useLesson(props.lessonId)
+  const courseId = lesson?.course?.id
+  const lspEnabled = Boolean(courseId && lesson?.course?.settings.lspCommand.trim())
   return (
-    <LspProvider>
+    <LspProvider courseId={courseId} enabled={lspEnabled}>
       <PracticeTabInner {...props} />
     </LspProvider>
   )
@@ -76,6 +79,7 @@ function PracticeTabInner({
 
   const task = lesson?.tasks.find((item) => item.id === activeTaskId) ?? lesson?.tasks[0]
   const runtime = lesson?.course?.settings.runtime ?? "lua"
+  const courseId = lesson?.course?.id ?? "lua"
   const filesQuery = useTaskFiles(lessonId, task?.id)
   const starterNames = new Set(
     (filesQuery.data?.starterFiles ?? task?.files ?? []).map((file) => file.name),
@@ -336,7 +340,7 @@ function PracticeTabInner({
                 />
               )}
               <div className="editor-toolbar__actions">
-                {runtime === "lua" && <LspStatus />}
+                <LspStatus />
                 <EditorSettings indent={indent} onChange={setIndent} />
                 {task.kind === "project" && activeFile && !starterNames.has(activeFile) && (
                   <button
@@ -391,8 +395,8 @@ function PracticeTabInner({
                 onChange={updateFile}
                 indent={indent}
                 language={runtimeLanguage(runtime)}
-                lspClient={runtime === "lua" ? lspClient : null}
-                documentUri={documentUri(lessonId, task.id, activeFile)}
+                lspClient={lspClient}
+                documentUri={documentUri(courseId, lessonId, task.id, activeFile)}
                 ariaLabel={`Редактор ${activeFile}`}
               />
             )}

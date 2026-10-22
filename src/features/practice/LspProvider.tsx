@@ -14,12 +14,17 @@ interface LspContextValue {
 
 const LspContext = createContext<LspContextValue>({ client: null, status: "unavailable" })
 
-export function documentUri(lessonId: string, taskId: string, fileName: string): string {
+export function documentUri(
+  courseId: string,
+  lessonId: string,
+  taskId: string,
+  fileName: string,
+): string {
   const file = fileName
     .split("/")
     .map((part) => encodeURIComponent(part))
     .join("/")
-  return `file:///learninglua/lessons/${encodeURIComponent(lessonId)}/tasks/${encodeURIComponent(taskId)}/${file}`
+  return `file:///learninglua/courses/${encodeURIComponent(courseId)}/lessons/${encodeURIComponent(lessonId)}/tasks/${encodeURIComponent(taskId)}/${file}`
 }
 
 function createTransport(socket: WebSocket): Transport & { dispose: () => void } {
@@ -58,22 +63,35 @@ function createTransport(socket: WebSocket): Transport & { dispose: () => void }
   }
 }
 
-export function LspProvider({ children }: { children: ReactNode }) {
+export function LspProvider({
+  children,
+  courseId,
+  enabled = true,
+}: {
+  children: ReactNode
+  courseId?: string
+  enabled?: boolean
+}) {
   const [client, setClient] = useState<LSPClient | null>(null)
   const [status, setStatus] = useState<LspStatusValue>("connecting")
 
   useEffect(() => {
-    if (import.meta.env.MODE === "test" || typeof WebSocket === "undefined") {
+    setClient(null)
+    if (!enabled || !courseId || import.meta.env.MODE === "test" || typeof WebSocket === "undefined") {
       setStatus("unavailable")
       return
     }
+    setStatus("connecting")
 
     let disposed = false
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:"
-    const socket = new WebSocket(`${protocol}//${window.location.host}/lsp`)
+    const socket = new WebSocket(
+      `${protocol}//${window.location.host}/lsp?courseId=${encodeURIComponent(courseId)}`,
+    )
     const transport = createTransport(socket)
+    const rootUri = `file:///learninglua/courses/${encodeURIComponent(courseId)}`
     const lsp = new LSPClient({
-      rootUri: "file:///learninglua",
+      rootUri,
       extensions: languageServerExtensions(),
       timeout: 5000,
     }).connect(transport)
@@ -94,7 +112,6 @@ export function LspProvider({ children }: { children: ReactNode }) {
     })
 
     setClient(lsp)
-    setStatus("connecting")
 
     return () => {
       disposed = true
@@ -104,7 +121,7 @@ export function LspProvider({ children }: { children: ReactNode }) {
       transport.dispose()
       socket.close(1000, "practice_closed")
     }
-  }, [])
+  }, [courseId, enabled])
 
   const value = useMemo(() => ({ client, status }), [client, status])
   return <LspContext.Provider value={value}>{children}</LspContext.Provider>
