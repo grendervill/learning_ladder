@@ -32,3 +32,10 @@ export function getDb(): DatabaseSync {
   }
   return singleton
 }
+
+export function closeDb(): void {
+  if (singleton) {
+    singleton.close()
+    singleton = null
+  }
+}
