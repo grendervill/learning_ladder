@@ -1,0 +1,46 @@
+-- Урок 10, задание 3: ПЛАНИРОВЩИК С ЗАДЕРЖКАМИ
+-- ==========================================
+-- ЗАДАНИЕ:
+-- Допиши кооперативный планировщик: задачи умеют "спать" N тиков через sleep().
+--
+-- КАРКАС (разбери, потом допиши TODO):
+--   local tasks = {}   -- {co=..., wake=...}  wake = тик пробуждения
+--   local tick = 0     -- глобальный счётчик тиков планировщика
+--   local function sleep(n)
+--     -- попросить планировщик: разбуди меня через n тиков.
+--     -- Копай: coroutine.yield(???) — что yield такого, чтобы планировщик
+--     -- понял задержку? Например, yield число n. А планировщик положит
+--     -- wake = tick + n. Разберись с протоколом сам и опиши комментарием!
+--   end
+--   local function spawn(f) tasks[#tasks+1] = {co = coroutine.create(f), wake = 0} end
+--
+-- ТРИ ДЕМО-ЗАДАЧИ (напиши сам):
+--   A: 3 раза { print("[tick?] A"); sleep(2) }  (тик печатай из глобального tick!)
+--   B: 2 раза { print("[tick?] B"); sleep(3) }
+--   C: просто 2 печати подряд без sleep (проверка: задачи без yield живут 1 тик?)
+--
+-- ЦИКЛ ПЛАНИРОВЩИКА:
+--   while #tasks > 0 do
+--     tick = tick + 1
+--     for i = #tasks, 1, -1 do            -- почему с конца? (ответь комментарием)
+--       local t = tasks[i]
+--       if coroutine.status(t.co) == "dead" then
+--         table.remove(tasks, i)
+--       elseif tick >= t.wake then
+--         local ok, delay = coroutine.resume(t.co)
+--         if not ok then print("задача упала:", delay); table.remove(tasks, i)
+--         elseif coroutine.status(t.co) == "dead" then table.remove(tasks, i)
+--         elseif type(delay) == "number" then t.wake = tick + delay end
+--       end
+--     end
+--   end
+--
+-- ОЖИДАЕМОЕ ПОВЕДЕНИЕ: A печатается каждые 2 тика, B — каждые 3, C — сразу.
+-- Порядок в пределах одного тика — порядок spawn (или обратный? проверь!).
+--
+-- ВОПРОСЫ НА 5:
+--  1) Что будет, если задача вызовет sleep(0)? А sleep(-5)? Нужна ли защита?
+--  2) Задача забыла yield и крутится в while true без sleep — что с планировщиком?
+--     Какой это вид многозадачности (вытесняющая/кооперативная) и в чём цена?
+
+-- TODO: sleep, spawn, три задачи, цикл планировщика
