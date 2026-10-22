@@ -766,7 +766,7 @@ git commit -m "feat: add love2d canvas preview"
 - Modify: `opencode.json` (создать при необходимости)
 
 **Interfaces:**
-- Produces: `createMentorSession(options?: { baseUrl?: string; directory?: string }): Promise<string>`, `deleteMentorSession(id: string): Promise<void>`, `reviewLesson(req: MentorReviewRequest): Promise<MentorReviewResult>`, `askMentor(sessionId: string, context: MentorContext, question: string): Promise<string>`, `stripReadyCode(md: string): string`.
+- Produces: `createMentorSession(options?: { baseUrl?: string; directory?: string }): Promise<string>`, `deleteMentorSession(id: string): Promise<void>`, `reviewLesson(req: MentorReviewRequest): Promise<MentorReviewResult>`, `askMentor(sessionId: string, context: MentorContext, question: string): Promise<string>`, `classifyFolders(snapshot: CourseSnapshot, unassigned: string[]): Promise<ClassificationResult>`, `stripReadyCode(md: string): string`.
 
 - [ ] **Step 1: Создать агента**
 
