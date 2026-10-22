@@ -1,0 +1,9 @@
+{
+  "title": "Модуль-калькулятор",
+  "kind": "code",
+  "entry": "main.lua",
+  "files": ["main.lua", "calc.lua"],
+  "args": [],
+  "stdin": "",
+  "timeoutMs": 3000
+}

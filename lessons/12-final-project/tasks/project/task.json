@@ -1,0 +1,9 @@
+{
+  "title": "Финальный проект",
+  "kind": "project",
+  "entry": "main.lua",
+  "files": ["main.lua"],
+  "args": [],
+  "stdin": "",
+  "timeoutMs": 3000
+}

@@ -1,0 +1,42 @@
+{
+  "title": "Проверь себя: модули",
+  "questions": [
+    {
+      "id": "missing-return",
+      "type": "single",
+      "prompt": "Что вернёт require, если модуль забыл вернуть таблицу (нет return M)?",
+      "options": ["true", "nil", "пустую таблицу", "ошибку компиляции"],
+      "correct": 0,
+      "explanation": "Если файл модуля ничего не возвращает, require вернёт true. Тогда попытка взять функцию из модуля приведёт к ошибке «attempt to index a boolean»."
+    },
+    {
+      "id": "subfolder-require",
+      "type": "single",
+      "prompt": "Как подключить модуль из подпапки utils/strings.lua?",
+      "options": [
+        "require(\"utils.strings\")",
+        "require(\"utils/strings\")",
+        "require(\"utils/strings.lua\")",
+        "require(\"utils\").strings"
+      ],
+      "correct": 0,
+      "explanation": "Подпапки в require отделяются точкой, а расширение .lua не пишется: require(\"utils.strings\") ищет utils/strings.lua."
+    },
+    {
+      "id": "module-anatomy",
+      "type": "text",
+      "prompt": "Опиши анатомию модуля в Lua: что нужно сделать, чтобы файл стал модулем?",
+      "placeholder": "Опиши три шага создания модуля…",
+      "referenceAnswer": "Создать локальную таблицу local M = {}, положить в неё нужные функции как поля M, а в конце вернуть её через return M. Подключение делается через require(\"имя\") без расширения.",
+      "criteria": ["local M = {}", "функции в M", "return M", "require без .lua"]
+    },
+    {
+      "id": "require-cache",
+      "type": "text",
+      "prompt": "Почему require кэширует модули и как заставить его перезагрузить модуль?",
+      "placeholder": "Объясни кэш и способ сброса…",
+      "referenceAnswer": "require сохраняет результат загрузки в таблице package.loaded и при повторном вызове возвращает его, не выполняя файл заново. Чтобы перезагрузить модуль, нужно обнулить кэш: package.loaded[\"имя\"] = nil, и затем снова вызвать require.",
+      "criteria": ["кэш в package.loaded", "файл не выполняется повторно", "сброс через package.loaded[...] = nil"]
+    }
+  ]
+}

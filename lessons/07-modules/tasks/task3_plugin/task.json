@@ -1,0 +1,9 @@
+{
+  "title": "Мини-система плагинов",
+  "kind": "code",
+  "entry": "main.lua",
+  "files": ["main.lua", "plugins/hello.lua", "plugins/shout.lua"],
+  "args": [],
+  "stdin": "",
+  "timeoutMs": 3000
+}

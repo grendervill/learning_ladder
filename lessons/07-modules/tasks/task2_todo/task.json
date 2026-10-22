@@ -1,0 +1,9 @@
+{
+  "title": "Менеджер задач: модуль + CLI",
+  "kind": "code",
+  "entry": "main.lua",
+  "files": ["main.lua", "todo.lua"],
+  "args": [],
+  "stdin": "",
+  "timeoutMs": 3000
+}

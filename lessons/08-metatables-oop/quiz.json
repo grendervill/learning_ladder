@@ -1,0 +1,42 @@
+{
+  "title": "Проверь себя: метатаблицы и ООП",
+  "questions": [
+    {
+      "id": "index-method",
+      "type": "single",
+      "prompt": "Какой метаметод вызывается, когда читают отсутствующий в таблице ключ?",
+      "options": ["__index", "__newindex", "__call", "__len"],
+      "correct": 0,
+      "explanation": "__index срабатывает при чтении ключа, которого нет в таблице. __newindex отвечает за запись, __call — за вызов таблицы как функции."
+    },
+    {
+      "id": "colon-sugar",
+      "type": "single",
+      "prompt": "Что делает двоеточие при вызове obj:greet()?",
+      "options": [
+        "передаёт obj первым аргументом в self",
+        "создаёт копию obj",
+        "вызывает greet без аргументов",
+        "ищет greet только в метатаблице"
+      ],
+      "correct": 0,
+      "explanation": "obj:greet() — это сахар для obj.greet(obj): объект подставляется первым аргументом self. При определении через : первый параметр self тоже прячется."
+    },
+    {
+      "id": "class-prototype",
+      "type": "text",
+      "prompt": "Как построить класс через прототипы? Опиши ключевые приёмы.",
+      "placeholder": "Опиши __index, new и setmetatable…",
+      "referenceAnswer": "Класс — это таблица с инвариантом Class.__index = Class. Конструктор Class:new(...) создаёт объект и привязывает его к классу через setmetatable(obj, self), а методы объявляются как function Class:method() ... end и находят себя через __index.",
+      "criteria": ["Class.__index = Class", "setmetatable(obj, self)", "методы через :", "поиск через __index"]
+    },
+    {
+      "id": "newindex-rawset",
+      "type": "text",
+      "prompt": "Чем __newindex отличается от __index и зачем внутри него нужен rawset?",
+      "placeholder": "Объясни перехват записи и rawset…",
+      "referenceAnswer": "__index перехватывает чтение отсутствующего ключа, а __newindex — запись нового ключа. Если внутри __newindex писать обычное присваивание, оно снова вызовет __newindex и уйдёт в бесконечную рекурсию, поэтому реальную запись делают через rawset, который обходит метатаблицу.",
+      "criteria": ["__index чтение, __newindex запись", "обычная запись вызовет рекурсию", "rawset обходит метатаблицу"]
+    }
+  ]
+}
