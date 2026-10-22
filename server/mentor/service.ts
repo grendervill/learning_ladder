@@ -104,12 +104,16 @@ ${formatRun(task.lastRun)}`
 
   const quiz = request.quiz
     .map((question) => {
+      const answer =
+        question.type === "single" && typeof question.answer === "number"
+          ? question.options?.[question.answer]
+          : question.answer
       const correct =
         question.type === "single"
           ? question.options?.[question.correct ?? -1]
           : question.referenceAnswer
       return `- ${question.id} [${question.type}] ${question.prompt}
-  ответ ученика: ${JSON.stringify(question.answer ?? null)}
+  ответ ученика: ${JSON.stringify(answer ?? null)}
   правильный ориентир: ${JSON.stringify(correct ?? null)}
   критерии: ${JSON.stringify(question.criteria ?? [])}`
     })

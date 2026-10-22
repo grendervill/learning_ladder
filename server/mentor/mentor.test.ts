@@ -66,6 +66,21 @@ describe("mentor service", () => {
     expect(generate).toHaveBeenCalledOnce()
   })
 
+  it("sends selected option text, not a raw index, to the mentor", async () => {
+    const generate = vi.fn(async (_session: string, prompt: string) => {
+      expect(prompt).toContain('ответ ученика: "number"')
+      expect(prompt).toContain('ответ ученика: "чтобы не засорять глобалы"')
+      return JSON.stringify(validReview)
+    })
+    const service = createMentorService({
+      generate,
+      createSession: async () => "session",
+      deleteSession: async () => {},
+    })
+    await service.reviewLesson("session", request)
+    expect(generate).toHaveBeenCalledOnce()
+  })
+
   it("retries invalid json once", async () => {
     const generate = vi
       .fn<() => Promise<string>>()
