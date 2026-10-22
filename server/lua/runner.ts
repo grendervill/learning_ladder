@@ -136,6 +136,12 @@ export async function runLuaTask(input: RunTaskInput): Promise<RunResult> {
     })
     child.on("close", (code) => finish(code ?? 1))
 
-    child.stdin.end(input.stdin ?? "")
+    // A fast program may exit before we write stdin; EPIPE is not a runner failure.
+    child.stdin.on("error", () => {})
+    try {
+      child.stdin.end(input.stdin ?? "")
+    } catch {
+      // The process already closed; its stdout/stderr are still reported.
+    }
   })
 }
