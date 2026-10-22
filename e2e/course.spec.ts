@@ -15,6 +15,9 @@ test("passes lesson 02 with a mocked mentor", async ({ page }) => {
     const json = await response.json()
     await route.fulfill({ response, json: { ...json, answers: {} } })
   })
+  await page.route("**/api/lessons/02-variables-types/quiz-answers", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true }) }),
+  )
   await page.route("**/api/lessons/02-variables-types/submit", async (route) => {
     await route.fulfill({
       status: 200,
