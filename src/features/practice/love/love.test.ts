@@ -28,6 +28,27 @@ describe("runLovePreview", () => {
     expect(result.errors.join(" ")).toContain("boom")
   })
 
+  it("dispatches mousepressed", async () => {
+    const { createLoveRuntime } = await import("./love-runtime")
+    const runtime = await createLoveRuntime(
+      [
+        {
+          name: "main.lua",
+          content:
+            "function love.mousepressed(x, y, button) love.graphics.circle('fill', x, y, 5) end",
+        },
+      ],
+      "main.lua",
+    )
+    try {
+      await runtime.frame(1 / 60)
+      await runtime.mousepressed(10, 20, "left")
+      expect(runtime.commands).toContainEqual(expect.objectContaining({ kind: "circle", x: 10, y: 20 }))
+    } finally {
+      runtime.dispose()
+    }
+  })
+
   it("runs update before draw", async () => {
     const result = await runLovePreview(
       [

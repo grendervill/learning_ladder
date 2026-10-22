@@ -25,6 +25,13 @@ describe("scanCourse", () => {
     expect(course.chapters[0].quiz?.questions).toHaveLength(4)
   })
 
+  it("accepts terminal tasks without starter files", () => {
+    const course = scanCourse(fixtureRoot)
+    const lesson = course.lessons["06-terminal"]
+    expect(lesson.errors).toEqual([])
+    expect(lesson.tasks[0]).toMatchObject({ id: "t1", kind: "terminal", entry: "" })
+  })
+
   it("reads folder tasks and sidecar metadata", () => {
     const course = scanCourse(fixtureRoot)
     const lesson = course.lessons["05-folder"]

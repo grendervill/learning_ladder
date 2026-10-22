@@ -169,6 +169,18 @@ export function LovePreview({
             event.preventDefault()
             void runtime.keypressed(loveKey(event.key))
           }}
+          onMouseDown={(event) => {
+            const runtime = runtimeRef.current
+            const canvas = canvasRef.current
+            if (!runtime || !canvas) return
+            const rect = canvas.getBoundingClientRect()
+            const x = ((event.clientX - rect.left) / rect.width) * WIDTH
+            const y = ((event.clientY - rect.top) / rect.height) * HEIGHT
+            const button = event.button === 1 ? "middle" : event.button === 2 ? "right" : "left"
+            event.preventDefault()
+            void runtime.mousepressed(x, y, button)
+          }}
+          onContextMenu={(event) => event.preventDefault()}
         />
         {status === "idle" && (
           <div className="love-idle">

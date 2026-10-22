@@ -133,12 +133,13 @@ function parseFolderTask(
     files.push({ name, content: readText(path) })
   }
 
+  const kind = metadata.kind ?? "code"
   const firstLua = files.find((file) => file.name.endsWith(".lua"))?.name ?? files[0]?.name ?? "main.lua"
-  const entry = metadata.entry || firstLua
-  if (!files.some((file) => file.name === entry)) {
+  const entry = kind === "terminal" ? (metadata.entry ?? "") : metadata.entry || firstLua
+  if (kind !== "terminal" && !files.some((file) => file.name === entry)) {
     addError(errors, lessonId, "task_entry_missing", `Задание ${folderName}: entry ${entry} не найден`, taskDir)
   }
-  if (files.length === 0) {
+  if (files.length === 0 && kind !== "terminal") {
     addError(errors, lessonId, "task_no_files", `Задание ${folderName}: нет стартовых файлов`, taskDir)
   }
 
@@ -146,7 +147,7 @@ function parseFolderTask(
     id: folderName,
     title: metadata.title || titleFromReadme || folderName,
     prompt,
-    kind: metadata.kind ?? "code",
+    kind,
     entry,
     files,
     args: metadata.args ?? [],

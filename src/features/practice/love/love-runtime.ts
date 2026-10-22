@@ -72,6 +72,7 @@ export interface LoveRuntime {
   commands: LoveCommand[]
   frame: (dt: number) => Promise<LoveCommand[]>
   keypressed: (key: string) => Promise<void>
+  mousepressed: (x: number, y: number, button: string) => Promise<void>
   dispose: () => void
 }
 
@@ -156,6 +157,12 @@ export async function createLoveRuntime(
     async keypressed(key: string) {
       const safe = JSON.stringify(key)
       await lua.doString(`if love.keypressed then love.keypressed(${safe}) end`)
+    },
+    async mousepressed(x: number, y: number, button: string) {
+      const safeButton = JSON.stringify(button)
+      await lua.doString(
+        `if love.mousepressed then love.mousepressed(${Number(x) || 0}, ${Number(y) || 0}, ${safeButton}) end`,
+      )
     },
     dispose() {
       lua.global.close()

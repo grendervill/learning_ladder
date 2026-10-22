@@ -1,0 +1,9 @@
+{
+  "title": "Осмотреться",
+  "kind": "terminal",
+  "entry": "",
+  "files": [],
+  "args": [],
+  "stdin": "",
+  "timeoutMs": 3000
+}
