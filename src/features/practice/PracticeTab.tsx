@@ -16,6 +16,7 @@ import { Markdown } from "../../lib/markdown"
 import { CodeEditor } from "./CodeEditor"
 import { EditorSettings } from "./EditorSettings"
 import { FileTabs } from "./FileTabs"
+import { RunPanel } from "./RunPanel"
 import { useEditorSettings } from "./useEditorSettings"
 import "./PracticeTab.css"
 
@@ -310,6 +311,19 @@ export function PracticeTab({
               <span className="editor-statusbar__hint">изменения сохраняются автоматически</span>
             </div>
           </div>
+
+          {task.kind === "love" ? (
+            <div className="run-love-note">
+              Предпросмотр LÖVE подключается отдельным слоем. Код и файлы уже сохраняются.
+            </div>
+          ) : (
+            <RunPanel
+              lessonId={lessonId}
+              taskId={task.id}
+              files={files}
+              kind={task.kind}
+            />
+          )}
         </>
       )}
     </div>

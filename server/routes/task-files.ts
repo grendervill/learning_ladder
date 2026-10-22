@@ -2,6 +2,7 @@ import { Router } from "express"
 import type { AppContext } from "../context"
 import { accessFor } from "../access-data"
 import type { TaskContent, TaskFile } from "../content/types"
+import { resetTaskWorkspace } from "../lua/workspace"
 
 const MAX_FILE_BYTES = 512 * 1024
 
@@ -131,17 +132,26 @@ export function createTaskFilesRouter(getContext: () => AppContext): Router {
     res.json({ files, savedAt: new Date().toISOString() })
   })
 
-  router.post("/tasks/:lessonId/:taskId/reset", (req, res) => {
-    const context = getContext()
-    const found = findTask(context, req.params.lessonId, req.params.taskId)
-    if ("error" in found) {
-      res.status(found.error === "lesson_locked" ? 403 : 404).json({ error: found.error })
-      return
+  router.post("/tasks/:lessonId/:taskId/reset", async (req, res, next) => {
+    try {
+      const context = getContext()
+      const found = findTask(context, req.params.lessonId, req.params.taskId)
+      if ("error" in found) {
+        res.status(found.error === "lesson_locked" ? 403 : 404).json({ error: found.error })
+        return
+      }
+      context.db
+        .prepare("delete from task_files where lesson_id = ? and task_id = ?")
+        .run(req.params.lessonId, req.params.taskId)
+      await resetTaskWorkspace(
+        req.params.lessonId,
+        req.params.taskId,
+        found.task.files,
+      )
+      res.json({ files: found.task.files })
+    } catch (error) {
+      next(error)
     }
-    context.db
-      .prepare("delete from task_files where lesson_id = ? and task_id = ?")
-      .run(req.params.lessonId, req.params.taskId)
-    res.json({ files: found.task.files })
   })
 
   return router
