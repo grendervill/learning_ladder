@@ -78,7 +78,7 @@ describe("CoursesHome", () => {
     expect(await screen.findByRole("heading", { name: "Lua" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Экономика" })).toBeInTheDocument()
     expect(screen.getByText("25%")).toBeInTheDocument()
-    expect(screen.getAllByRole("link", { name: /Создать курс/ }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole("button", { name: /Создать курс/ }).length).toBeGreaterThan(0)
   })
 
   it("filters cards by the search query", async () => {

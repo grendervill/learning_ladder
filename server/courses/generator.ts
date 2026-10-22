@@ -198,6 +198,7 @@ export function createCourseGenerator(options: CourseGeneratorOptions): CourseGe
       total,
       completed: 0,
       courseId,
+      lessonTitles: outline.chapters.flatMap((chapter) => chapter.lessons),
     })
 
     const chapters: Chapter[] = outline.chapters.map((chapter, index) => ({

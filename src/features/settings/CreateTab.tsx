@@ -1,6 +1,8 @@
 import { Sparkles, WandSparkles } from "lucide-react"
+import { useCourseWizard } from "../courses/CourseWizardProvider"
 
 export function CreateTab() {
+  const wizard = useCourseWizard()
   return (
     <div className="create-panel">
       <span className="create-panel__icon" aria-hidden>
@@ -14,7 +16,7 @@ export function CreateTab() {
       <button
         type="button"
         className="settings-button settings-button--primary"
-        onClick={() => window.dispatchEvent(new CustomEvent("learninglua:open-course-wizard"))}
+        onClick={wizard.open}
       >
         <Sparkles size={15} aria-hidden /> Открыть мастер
       </button>

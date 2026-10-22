@@ -183,6 +183,9 @@
   border-color: var(--line-strong);
   background: transparent;
   color: var(--muted);
+  font-family: var(--font-ui);
+  text-align: center;
+  cursor: pointer;
 }
 
 .course-card--create::before,

@@ -4,6 +4,7 @@ import { Menu, MoonStar } from "lucide-react"
 import { Sidebar } from "../components/Sidebar"
 import { ThemeToggle } from "../components/ThemeToggle"
 import { SessionProvider } from "../features/session/SessionContext"
+import { CourseWizardProvider } from "../features/courses/CourseWizardProvider"
 import { useContentEvents } from "../lib/useContentEvents"
 import "./AppShell.css"
 
@@ -15,29 +16,31 @@ export function AppShell() {
 
   return (
     <SessionProvider>
-      <div className="app-shell">
-        <Sidebar open={sidebarOpen} onClose={closeSidebar} />
-        <div className="app-main">
-          <header className="mobile-bar">
-            <button
-              type="button"
-              className="mobile-bar__menu"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Открыть программу"
-            >
-              <Menu size={19} />
-            </button>
-            <div className="mobile-bar__brand">
-              <MoonStar size={14} aria-hidden />
-              <span>Лестница обучения</span>
-            </div>
-            <ThemeToggle compact />
-          </header>
-          <main className="app-content" key={location.pathname}>
-            <Outlet />
-          </main>
+      <CourseWizardProvider>
+        <div className="app-shell">
+          <Sidebar open={sidebarOpen} onClose={closeSidebar} />
+          <div className="app-main">
+            <header className="mobile-bar">
+              <button
+                type="button"
+                className="mobile-bar__menu"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Открыть программу"
+              >
+                <Menu size={19} />
+              </button>
+              <div className="mobile-bar__brand">
+                <MoonStar size={14} aria-hidden />
+                <span>Лестница обучения</span>
+              </div>
+              <ThemeToggle compact />
+            </header>
+            <main className="app-content" key={location.pathname}>
+              <Outlet />
+            </main>
+          </div>
         </div>
-      </div>
+      </CourseWizardProvider>
     </SessionProvider>
   )
 }

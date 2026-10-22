@@ -10,6 +10,7 @@ import {
 } from "lucide-react"
 import { useCourses } from "../../lib/useCourses"
 import { useProject } from "../../lib/useProject"
+import { useCourseWizard } from "./CourseWizardProvider"
 import { CourseCard } from "./CourseCard"
 import "./CoursesHome.css"
 
@@ -27,6 +28,7 @@ export function CoursesHome() {
   const [page, setPage] = useState(1)
   const courses = useCourses(query, page)
   const project = useProject()
+  const wizard = useCourseWizard()
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -65,9 +67,9 @@ export function CoursesHome() {
             Выбери маршрут или собери новый — под тему, темп и свой способ разбираться.
           </p>
         </div>
-        <Link to="/settings?tab=create" className="courses-button courses-button--primary">
+        <button type="button" className="courses-button courses-button--primary" onClick={wizard.open}>
           <Plus size={16} aria-hidden /> Создать курс
-        </Link>
+        </button>
       </header>
 
       <div className="courses-toolbar">
@@ -118,9 +120,9 @@ export function CoursesHome() {
             <Link to="/settings?tab=project" className="courses-button">
               Изменить папку проекта
             </Link>
-            <Link to="/settings?tab=create" className="courses-button courses-button--primary">
+            <button type="button" className="courses-button courses-button--primary" onClick={wizard.open}>
               <Plus size={15} aria-hidden /> Создать первый курс
-            </Link>
+            </button>
           </div>
         </section>
       )}
@@ -150,7 +152,7 @@ export function CoursesHome() {
               <CourseCard course={course} key={course.id} />
             ))}
             {!query && (
-              <Link to="/settings?tab=create" className="course-card course-card--create">
+              <button type="button" className="course-card course-card--create" onClick={wizard.open}>
                 <div className="course-card__body">
                   <span className="course-card__icon" aria-hidden>
                     <Plus size={22} strokeWidth={1.7} />
@@ -158,7 +160,7 @@ export function CoursesHome() {
                   <h2>Создать курс</h2>
                   <p>Опиши тему — конструктор соберёт программу и карточку.</p>
                 </div>
-              </Link>
+              </button>
             )}
           </div>
 

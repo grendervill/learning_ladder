@@ -17,6 +17,7 @@ export interface CourseJob {
   total: number
   title: string | null
   courseId: string | null
+  lessonTitles?: string[]
   error: string | null
   cancelRequested: boolean
   createdAt: string
