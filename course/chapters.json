@@ -15,6 +15,13 @@
       "quizFile": "functions-and-data.json"
     },
     {
+      "id": "terminal-and-tools",
+      "title": "Инструменты",
+      "description": "Терминал, скрипты и работа с файловой системой.",
+      "lessonIds": ["terminal-basics", "scripting", "filesystem"],
+      "quizFile": "tools.json"
+    },
+    {
       "id": "advanced-lua",
       "title": "Продвинутый Lua",
       "description": "Модули, метатаблицы, замыкания, корутины и окружения.",
@@ -26,6 +33,13 @@
         "11-env-gc"
       ],
       "quizFile": "advanced-lua.json"
+    },
+    {
+      "id": "love2d-games",
+      "title": "Графика и игры",
+      "description": "LÖVE 2D: фигуры, анимация, игровой цикл и мини-игра.",
+      "lessonIds": ["love2d-basics", "love2d-arcade"],
+      "quizFile": "graphics.json"
     },
     {
       "id": "final-project",

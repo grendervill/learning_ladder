@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs"
+import { join } from "node:path"
 import express, { type Express } from "express"
 import type { DatabaseSync } from "./db"
 import type { CourseSnapshot } from "./content/types"
@@ -55,6 +57,18 @@ export function createApp(options: AppOptions = {}): Express {
   app.use("/api", createContentRouter(getContext, () => options.mentor ?? getMentorService()))
   app.use("/api", createEventsRouter())
   app.use("/api", createProgressRouter(getContext))
+
+  const dist = join(process.cwd(), "dist")
+  if (process.env.NODE_ENV === "production" && existsSync(dist)) {
+    app.use(express.static(dist))
+    app.use((req, res, next) => {
+      if (req.method !== "GET" || req.path.startsWith("/api") || req.path.startsWith("/lsp")) {
+        next()
+        return
+      }
+      res.sendFile(join(dist, "index.html"))
+    })
+  }
 
   app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     console.error(error)
