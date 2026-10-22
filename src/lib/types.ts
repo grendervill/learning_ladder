@@ -62,4 +62,5 @@ export interface LessonDetail {
   errors: Array<{ code: string; message: string }>
   access: LessonStatus
   chapterId: string | null
+  chapterTitle: string | null
 }

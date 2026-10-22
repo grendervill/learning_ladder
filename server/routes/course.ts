@@ -49,10 +49,12 @@ export function createCourseRouter(getContext: () => AppContext): Router {
       res.status(403).json({ error: "lesson_locked" })
       return
     }
+    const chapter = course.chapters.find((item) => item.lessonIds.includes(lesson.id))
     res.json({
       ...publicLesson(lesson),
       access: access.lessons[lesson.id],
-      chapterId: course.chapters.find((chapter) => chapter.lessonIds.includes(lesson.id))?.id ?? null,
+      chapterId: chapter?.id ?? null,
+      chapterTitle: chapter?.title ?? null,
     })
   })
 

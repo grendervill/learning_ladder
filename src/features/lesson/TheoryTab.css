@@ -1,0 +1,258 @@
+.theory-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 224px;
+  gap: 58px;
+  padding-top: 34px;
+}
+
+.lesson-markdown {
+  max-width: 760px;
+  color: var(--text-soft);
+  font-size: 16px;
+  line-height: 1.72;
+}
+
+.lesson-markdown > :first-child {
+  margin-top: 0;
+}
+
+.lesson-markdown h1 {
+  margin: 0 0 18px;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 420;
+  line-height: 1.1;
+  letter-spacing: -.035em;
+}
+
+.lesson-markdown h2 {
+  margin: 37px 0 13px;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 29px;
+  font-weight: 430;
+  line-height: 1.16;
+  letter-spacing: -.025em;
+  scroll-margin-top: 24px;
+}
+
+.lesson-markdown h3 {
+  margin: 29px 0 10px;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 500;
+  line-height: 1.24;
+  letter-spacing: -.018em;
+  scroll-margin-top: 24px;
+}
+
+.lesson-markdown p {
+  margin: 0 0 16px;
+}
+
+.lesson-markdown strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.lesson-markdown em {
+  color: var(--accent);
+  font-style: italic;
+}
+
+.lesson-markdown a {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.lesson-markdown ul,
+.lesson-markdown ol {
+  margin: 0 0 18px;
+  padding-left: 24px;
+}
+
+.lesson-markdown li {
+  margin: 6px 0;
+  padding-left: 4px;
+}
+
+.lesson-markdown li::marker {
+  color: var(--accent);
+}
+
+.lesson-markdown blockquote {
+  margin: 22px 0;
+  padding: 4px 0 4px 18px;
+  border-left: 2px solid var(--accent-soft);
+  color: var(--muted-strong);
+}
+
+.lesson-markdown blockquote p {
+  margin: 0;
+}
+
+.lesson-markdown hr {
+  margin: 34px 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.lesson-markdown code {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-tint));
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: .84em;
+}
+
+.lesson-markdown pre {
+  position: relative;
+  margin: 20px 0 24px;
+  padding: 18px 19px;
+  overflow-x: auto;
+  border: 1px solid color-mix(in srgb, var(--line) 84%, transparent);
+  border-radius: 10px;
+  background: var(--code-bg);
+  color: var(--code-text);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.72;
+  tab-size: 2;
+}
+
+.lesson-markdown pre code {
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+}
+
+.lesson-markdown .hljs-keyword,
+.lesson-markdown .hljs-built_in,
+.lesson-markdown .hljs-selector-tag {
+  color: #9ed8bf;
+}
+
+.lesson-markdown .hljs-string,
+.lesson-markdown .hljs-attr {
+  color: #d8b58b;
+}
+
+.lesson-markdown .hljs-number,
+.lesson-markdown .hljs-literal {
+  color: #d1b386;
+}
+
+.lesson-markdown .hljs-comment {
+  color: #6c8475;
+  font-style: italic;
+}
+
+.lesson-markdown .hljs-title,
+.lesson-markdown .hljs-function {
+  color: #a7c7dc;
+}
+
+.lesson-markdown table {
+  width: 100%;
+  margin: 20px 0 25px;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.lesson-markdown th,
+.lesson-markdown td {
+  padding: 9px 11px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.lesson-markdown th {
+  color: var(--text);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--surface-tint) 65%, transparent);
+}
+
+.lesson-markdown tr:last-child td {
+  border-bottom: 0;
+}
+
+.theory-rail {
+  position: sticky;
+  top: 28px;
+  align-self: start;
+  padding-top: 4px;
+}
+
+.theory-rail__head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 12px;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: .02em;
+}
+
+.theory-rail nav {
+  display: grid;
+  gap: 9px;
+  border-left: 1px solid var(--line);
+  padding-left: 13px;
+}
+
+.theory-rail a {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+  text-decoration: none;
+  transition: color var(--transition);
+}
+
+.theory-rail a:hover {
+  color: var(--text);
+}
+
+.theory-rail__sub {
+  padding-left: 8px;
+  font-size: 10px;
+  opacity: .82;
+}
+
+@media (max-width: 1180px) {
+  .theory-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .theory-rail {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .lesson-markdown {
+    font-size: 15px;
+  }
+
+  .lesson-markdown h2 {
+    font-size: 26px;
+  }
+
+  .lesson-markdown h3 {
+    font-size: 19px;
+  }
+
+  .lesson-markdown pre {
+    margin-left: -2px;
+    margin-right: -2px;
+    font-size: 11.5px;
+  }
+}

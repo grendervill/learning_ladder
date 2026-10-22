@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom"
 import { AppShell } from "./AppShell"
 import { CourseHome } from "../features/course/CourseHome"
-import { LessonPlaceholder } from "../features/lesson/LessonPlaceholder"
+import { LessonPage } from "../features/lesson/LessonPage"
 import { PerformancePlaceholder } from "../features/performance/PerformancePlaceholder"
 import { NotFound } from "./NotFound"
 
@@ -10,7 +10,7 @@ export function AppRoutes() {
     <Routes>
       <Route element={<AppShell />}>
         <Route index element={<CourseHome />} />
-        <Route path="lessons/:lessonId" element={<LessonPlaceholder />} />
+        <Route path="lessons/:lessonId" element={<LessonPage />} />
         <Route path="performance" element={<PerformancePlaceholder />} />
         <Route path="*" element={<NotFound />} />
       </Route>
