@@ -15,6 +15,7 @@ import {
 import { useEffect } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { fetchJson } from "../lib/api"
+import { plural } from "../lib/plural"
 import { useCourse } from "../lib/useCourse"
 import { useCourses } from "../lib/useCourses"
 import { useSession } from "../features/session/SessionContext"
@@ -97,10 +98,8 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           )}
           <small>
             {courseId
-              ? `${passedLessons} из ${totalLessons} уроков`
-              : courseCount === 1
-                ? "1 курс в проекте"
-                : `${courseCount} курсов в проекте`}
+              ? `${passedLessons} из ${totalLessons} ${plural(totalLessons, ["урока", "уроков", "уроков"])}`
+              : `${courseCount} ${plural(courseCount, ["курс", "курса", "курсов"])} в проекте`}
           </small>
         </div>
 

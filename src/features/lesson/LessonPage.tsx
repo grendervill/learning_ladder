@@ -10,6 +10,7 @@ import {
   LockKeyhole,
 } from "lucide-react"
 import { useLesson } from "../../lib/useLesson"
+import { plural } from "../../lib/plural"
 import { useSession } from "../session/SessionContext"
 import type { LessonDetail } from "../../lib/types"
 import { PageSkeleton } from "../course/CourseStates"
@@ -137,7 +138,8 @@ export function LessonPage({ lessonId }: { lessonId?: string }) {
             <BookOpen size={14} aria-hidden /> теория
           </span>
           <span>
-            <ListChecks size={14} aria-hidden /> {quizCount} вопросов
+            <ListChecks size={14} aria-hidden /> {quizCount}{" "}
+            {plural(quizCount, ["вопрос", "вопроса", "вопросов"])}
           </span>
           {general ? (
             <span>
@@ -145,7 +147,8 @@ export function LessonPage({ lessonId }: { lessonId?: string }) {
             </span>
           ) : (
             <span>
-              <Code2 size={14} aria-hidden /> {taskCount} заданий
+              <Code2 size={14} aria-hidden /> {taskCount}{" "}
+              {plural(taskCount, ["задание", "задания", "заданий"])}
             </span>
           )}
         </div>

@@ -13,6 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import type { CourseCard as CourseCardData, CourseIcon } from "../../lib/types"
+import { plural } from "../../lib/plural"
 import "./CourseCard.css"
 
 const ICONS: Record<CourseIcon, LucideIcon> = {
@@ -74,8 +75,8 @@ export function CourseCard({ course }: { course: CourseCardData }) {
         <p className="course-card__description">{course.description || "Курс без описания."}</p>
 
         <div className="course-card__meta">
-          <span>{course.progress.chapterCount} глав</span>
-          <span>{course.progress.total} уроков</span>
+          <span>{course.progress.chapterCount} {plural(course.progress.chapterCount, ["глава", "главы", "глав"])}</span>
+          <span>{course.progress.total} {plural(course.progress.total, ["урок", "урока", "уроков"])}</span>
           <span className="course-card__percent">{percent}%</span>
         </div>
 

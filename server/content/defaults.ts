@@ -1,44 +1,16 @@
-import type { CourseMode, CourseMeta, CourseSettings, CourseTheme, CourseIcon, RuntimeKind } from "./types"
+import {
+  COURSE_ICONS,
+  COURSE_MODES,
+  COURSE_THEMES,
+  RUNTIME_KINDS,
+  settingsForRuntime,
+} from "../../shared/runtimes"
+import type { CourseMeta } from "./types"
 
-export const COURSE_THEMES: CourseTheme[] = ["forest", "amber", "ocean", "plum", "clay"]
-export const COURSE_ICONS: CourseIcon[] = [
-  "book",
-  "code",
-  "chart",
-  "globe",
-  "atom",
-  "scale",
-  "palette",
-  "heart",
-]
-export const COURSE_MODES: CourseMode[] = ["general", "math", "programming"]
-export const RUNTIME_KINDS: RuntimeKind[] = [
-  "none",
-  "lua",
-  "c",
-  "cpp",
-  "python",
-  "javascript",
-  "custom",
-]
+export { COURSE_ICONS, COURSE_MODES, COURSE_THEMES, RUNTIME_KINDS }
 
-export const DEFAULT_COURSE_SETTINGS: CourseSettings = {
-  runtime: "none",
-  runCommand: "",
-  lspCommand: "",
-  lspArgs: [],
-  fileExtension: ".txt",
-  entry: "main.txt",
-}
-
-export const LUA_COURSE_SETTINGS: CourseSettings = {
-  runtime: "lua",
-  runCommand: "lua {file}",
-  lspCommand: "lua-language-server",
-  lspArgs: [],
-  fileExtension: ".lua",
-  entry: "main.lua",
-}
+export const DEFAULT_COURSE_SETTINGS = settingsForRuntime("none")
+export const LUA_COURSE_SETTINGS = settingsForRuntime("lua")
 
 export const DEFAULT_LUA_COURSE_META: CourseMeta = {
   format: "legacy",

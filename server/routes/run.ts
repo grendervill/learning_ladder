@@ -2,7 +2,9 @@ import { Router } from "express"
 import type { AppContext } from "../context"
 import { accessForLesson } from "../access-data"
 import { isLessonAccessible } from "../access"
-import { runLuaTask } from "../lua/runner"
+import { courseMetaForLesson } from "../content/courses"
+import { runTask } from "../run/runner"
+import { workspacePath } from "../lua/workspace"
 import type { TaskFile } from "../content/types"
 import { recordActivity } from "../sessions/lifecycle"
 
@@ -54,6 +56,13 @@ export function createRunRouter(getContext: () => AppContext): Router {
         return
       }
 
+      const courseMeta = courseMetaForLesson(course, lesson.id)
+      const settings = courseMeta.settings
+      if (settings.runtime === "none" || !settings.runCommand.trim()) {
+        res.status(400).json({ error: "runtime_not_configured" })
+        return
+      }
+
       const bodyFiles = req.body?.files
       let files: TaskFile[]
       if (Array.isArray(bodyFiles)) {
@@ -77,14 +86,21 @@ export function createRunRouter(getContext: () => AppContext): Router {
         }))
       }
 
-      const result = await runLuaTask({
-        lessonId: lesson.id,
-        taskId: task.id,
+      const timeoutMs = clampTimeout(req.body?.timeoutMs, task.timeoutMs)
+      const args = Array.isArray(req.body?.args) ? req.body.args.map(String) : task.args
+      const stdin = typeof req.body?.stdin === "string" ? req.body.stdin : task.stdin
+      const result = await runTask({
         files,
         entry: task.entry,
-        args: Array.isArray(req.body?.args) ? req.body.args.map(String) : task.args,
-        stdin: typeof req.body?.stdin === "string" ? req.body.stdin : task.stdin,
-        timeoutMs: clampTimeout(req.body?.timeoutMs, task.timeoutMs),
+        command: settings.runCommand,
+        args,
+        stdin,
+        timeoutMs,
+        cwd: workspacePath(lesson.id, task.id),
+        env:
+          settings.runtime === "lua"
+            ? { LUA_PATH: "./?.lua;./?/init.lua;;" }
+            : undefined,
       })
 
       context.db
@@ -106,6 +122,16 @@ export function createRunRouter(getContext: () => AppContext): Router {
       recordActivity(context, { kind: "run", lessonId: lesson.id, taskId: task.id })
       res.json(result)
     } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.startsWith("unsafe_file_name") || error.message === "entry_missing") {
+          res.status(400).json({ error: "files_invalid" })
+          return
+        }
+        if (error.message === "run_command_missing") {
+          res.status(400).json({ error: "runtime_not_configured" })
+          return
+        }
+      }
       next(error)
     }
   })

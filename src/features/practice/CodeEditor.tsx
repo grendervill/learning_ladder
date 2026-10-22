@@ -5,8 +5,12 @@ import { EditorView, keymap } from "@codemirror/view"
 import { indentWithTab } from "@codemirror/commands"
 import { StreamLanguage, syntaxHighlighting, HighlightStyle, indentUnit } from "@codemirror/language"
 import { lua } from "@codemirror/legacy-modes/mode/lua"
+import { cpp } from "@codemirror/lang-cpp"
+import { python } from "@codemirror/lang-python"
+import { javascript } from "@codemirror/lang-javascript"
 import { tags } from "@lezer/highlight"
 import type { LSPClient } from "@codemirror/lsp-client"
+import type { RuntimeLanguage } from "../../../shared/runtimes"
 import { indentUnitFor, type IndentMode } from "./useEditorSettings"
 import "./CodeEditor.css"
 
@@ -73,6 +77,14 @@ const luaHighlight = HighlightStyle.define([
   { tag: [tags.variableName, tags.propertyName], color: "var(--syntax-variable)" },
 ])
 
+function languageExtension(language: RuntimeLanguage) {
+  if (language === "lua") return StreamLanguage.define(lua)
+  if (language === "cpp") return cpp()
+  if (language === "python") return python()
+  if (language === "javascript") return javascript()
+  return []
+}
+
 function indentExtensions(mode: IndentMode) {
   return [indentUnit.of(indentUnitFor(mode)), EditorState.tabSize.of(mode === "2" ? 2 : 4)]
 }
@@ -81,13 +93,15 @@ export function CodeEditor({
   value,
   onChange,
   indent,
+  language = "lua",
   lspClient,
   documentUri,
-  ariaLabel = "Редактор Lua",
+  ariaLabel = "Редактор кода",
 }: {
   value: string
   onChange: (value: string) => void
   indent: IndentMode
+  language?: RuntimeLanguage
   lspClient?: LSPClient | null
   documentUri?: string
   ariaLabel?: string
@@ -111,7 +125,7 @@ export function CodeEditor({
         extensions: [
           basicSetup,
           keymap.of([indentWithTab]),
-          StreamLanguage.define(lua),
+          languageExtension(language),
           syntaxHighlighting(luaHighlight),
           EditorView.lineWrapping,
           editorTheme,

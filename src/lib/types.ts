@@ -1,18 +1,21 @@
+import type {
+  CourseIcon,
+  CourseMode,
+  CourseSettings,
+  CourseTheme,
+  RuntimeKind,
+} from "../../shared/runtimes"
+
+export type {
+  CourseIcon,
+  CourseMode,
+  CourseSettings,
+  CourseTheme,
+  RuntimeKind,
+} from "../../shared/runtimes"
+
 export type LessonStatus = "locked" | "available" | "in_progress" | "passed"
 export type ChapterStatus = "locked" | "available" | "in_progress" | "passed"
-export type CourseMode = "general" | "math" | "programming"
-export type CourseTheme = "forest" | "amber" | "ocean" | "plum" | "clay"
-export type CourseIcon = "book" | "code" | "chart" | "globe" | "atom" | "scale" | "palette" | "heart"
-export type RuntimeKind = "none" | "lua" | "c" | "cpp" | "python" | "javascript" | "custom"
-
-export interface CourseSettings {
-  runtime: RuntimeKind
-  runCommand: string
-  lspCommand: string
-  lspArgs: string[]
-  fileExtension: string
-  entry: string
-}
 
 export interface CourseMeta {
   id: string

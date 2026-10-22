@@ -2,6 +2,7 @@ import { useMemo } from "react"
 import { ChartNoAxesColumn, CircleCheck, GraduationCap, Sparkles } from "lucide-react"
 import { useCourse } from "../../lib/useCourse"
 import { useProgress } from "../../lib/useProgress"
+import { plural } from "../../lib/plural"
 import { AccessError, PageSkeleton } from "../course/CourseStates"
 import { GradeTable } from "./GradeTable"
 import { ReportList } from "./ReportList"
@@ -74,7 +75,7 @@ export function PerformancePage() {
             </span>
             <h2>По главам и урокам</h2>
           </div>
-          <span>{summary.passed} из {summary.total} уроков закрыто</span>
+          <span>{summary.passed} из {summary.total} {plural(summary.total, ["урока", "уроков", "уроков"])} закрыто</span>
         </div>
         <GradeTable course={course.data} progress={progress.data} />
       </section>

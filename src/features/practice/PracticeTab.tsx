@@ -12,6 +12,7 @@ import {
   Trash2,
 } from "lucide-react"
 import { useLesson } from "../../lib/useLesson"
+import { runtimeLanguage } from "../../lib/courseOptions"
 import {
   resetTaskFiles,
   saveTaskFiles,
@@ -74,6 +75,7 @@ function PracticeTabInner({
   const loadedTask = useRef<string | null>(null)
 
   const task = lesson?.tasks.find((item) => item.id === activeTaskId) ?? lesson?.tasks[0]
+  const runtime = lesson?.course?.settings.runtime ?? "lua"
   const filesQuery = useTaskFiles(lessonId, task?.id)
   const starterNames = new Set(
     (filesQuery.data?.starterFiles ?? task?.files ?? []).map((file) => file.name),
@@ -334,7 +336,7 @@ function PracticeTabInner({
                 />
               )}
               <div className="editor-toolbar__actions">
-                <LspStatus />
+                {runtime === "lua" && <LspStatus />}
                 <EditorSettings indent={indent} onChange={setIndent} />
                 {task.kind === "project" && activeFile && !starterNames.has(activeFile) && (
                   <button
@@ -388,7 +390,8 @@ function PracticeTabInner({
                 value={files.find((file) => file.name === activeFile)?.content ?? ""}
                 onChange={updateFile}
                 indent={indent}
-                lspClient={lspClient}
+                language={runtimeLanguage(runtime)}
+                lspClient={runtime === "lua" ? lspClient : null}
                 documentUri={documentUri(lessonId, task.id, activeFile)}
                 ariaLabel={`Редактор ${activeFile}`}
               />
@@ -419,6 +422,7 @@ function PracticeTabInner({
               taskId={task.id}
               files={files}
               kind={task.kind}
+              runtime={runtime}
             />
           )}
             </>
