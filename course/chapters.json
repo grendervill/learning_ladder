@@ -1,0 +1,38 @@
+{
+  "chapters": [
+    {
+      "id": "foundations",
+      "title": "Основы",
+      "description": "Первый запуск, переменные, типы и управление потоком.",
+      "lessonIds": ["01-hello-lua", "02-variables-types", "03-control-flow"],
+      "quizFile": "foundations.json"
+    },
+    {
+      "id": "functions-and-data",
+      "title": "Функции и данные",
+      "description": "Функции, таблицы и стандартная библиотека Lua.",
+      "lessonIds": ["04-functions", "05-tables-basics", "06-stdlib"],
+      "quizFile": "functions-and-data.json"
+    },
+    {
+      "id": "advanced-lua",
+      "title": "Продвинутый Lua",
+      "description": "Модули, метатаблицы, замыкания, корутины и окружения.",
+      "lessonIds": [
+        "07-modules",
+        "08-metatables-oop",
+        "09-closures-errors",
+        "10-coroutines",
+        "11-env-gc"
+      ],
+      "quizFile": "advanced-lua.json"
+    },
+    {
+      "id": "final-project",
+      "title": "Финальный проект",
+      "description": "Собственный проект: от плана до демо.",
+      "lessonIds": ["12-final-project"],
+      "quizFile": "final-project.json"
+    }
+  ]
+}
