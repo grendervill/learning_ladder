@@ -42,10 +42,27 @@ export function createProgressRouter(getContext: () => AppContext): Router {
       .prepare("select id, started_at as startedAt, ended_at as endedAt, status, summary_md as summaryMd, stats_json as statsJson from study_sessions order by started_at desc limit 20")
       .all()
 
+    const attempts = context.db
+      .prepare(
+        `select id, scope, scope_id as scopeId, kind, submitted_at as submittedAt, grade, feedback_json as feedbackJson
+         from attempts order by id desc limit 50`,
+      )
+      .all()
+      .map((row: any) => ({
+        id: row.id,
+        scope: row.scope,
+        scopeId: row.scopeId,
+        kind: row.kind,
+        submittedAt: row.submittedAt,
+        grade: row.grade,
+        feedback: row.feedbackJson ? JSON.parse(row.feedbackJson) : null,
+      }))
+
     res.json({
       access,
       lessons: Object.fromEntries(lessonRows.map((row) => [row.lessonId, row])),
       chapters: Object.fromEntries(chapterRows.map((row) => [row.chapterId, row])),
+      attempts,
       sessions,
     })
   })

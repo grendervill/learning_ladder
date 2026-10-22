@@ -1,0 +1,350 @@
+.performance-page {
+  width: min(1120px, calc(100% - 72px));
+  margin: 0 auto;
+  padding: 50px 0 80px;
+}
+
+.performance-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 30px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--line);
+}
+
+.performance-head h1 {
+  margin: 13px 0 9px;
+  font-family: var(--font-display);
+  font-size: clamp(38px, 4.3vw, 58px);
+  font-weight: 380;
+  line-height: 1.02;
+  letter-spacing: -.045em;
+}
+
+.performance-head > div:first-child > p {
+  max-width: 520px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.performance-orbit {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 150px;
+  height: 150px;
+  flex: none;
+}
+
+.performance-orbit__ring {
+  position: absolute;
+  inset: 8px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 50%;
+}
+
+.performance-orbit__moon {
+  display: grid;
+  place-items: center;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: #143529;
+  box-shadow: inset -22px -10px 0 color-mix(in srgb, var(--accent) 26%, transparent);
+}
+
+.performance-orbit__moon strong {
+  font-family: var(--font-mono);
+  font-size: 17px;
+}
+
+.performance-orbit__moon small {
+  margin-top: 3px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+}
+
+.performance-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  margin: 27px 0 50px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.performance-stats > div {
+  display: grid;
+  gap: 7px;
+  padding: 18px 20px;
+  background: var(--surface);
+}
+
+.performance-stats span {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+}
+
+.performance-stats strong {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 430;
+  line-height: 1;
+}
+
+.performance-section {
+  margin-top: 50px;
+}
+
+.performance-section__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.performance-section__head h2 {
+  margin: 9px 0 0;
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 410;
+  letter-spacing: -.03em;
+}
+
+.performance-section__head > span {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.performance-empty {
+  margin: 20px 0;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.grade-chapter {
+  padding: 18px 0 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.grade-chapter__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 7px;
+}
+
+.grade-chapter__head h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.grade-chip {
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 8px;
+}
+
+.grade-chip.is-passed {
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  background: var(--accent-faint);
+  color: var(--accent);
+}
+
+.grade-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 90px 48px 90px;
+  gap: 12px;
+  align-items: center;
+  padding: 9px 0;
+  border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.grade-row__status,
+.grade-row__grade,
+.grade-row__attempts {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+}
+
+.grade-row__grade {
+  color: var(--text);
+  font-size: 11px;
+}
+
+.grade-row__status--passed {
+  color: var(--accent);
+}
+
+.grade-row__status--locked {
+  color: color-mix(in srgb, var(--muted) 60%, transparent);
+}
+
+.attempt-list {
+  display: grid;
+}
+
+.attempt-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.attempt-grade {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: 16px;
+}
+
+.attempt-row b {
+  display: block;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 500;
+}
+
+.attempt-row p {
+  max-width: 680px;
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.attempt-row time {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  white-space: nowrap;
+}
+
+.report-list {
+  display: grid;
+}
+
+.report-item {
+  border-bottom: 1px solid var(--line);
+}
+
+.report-item summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 2px;
+  color: var(--text);
+  cursor: pointer;
+  list-style: none;
+}
+
+.report-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.report-item summary b {
+  display: block;
+  font-size: 12.5px;
+}
+
+.report-item summary small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+}
+
+.report-item[open] summary svg {
+  transform: rotate(180deg);
+}
+
+.report-item__body {
+  max-width: 820px;
+  padding: 0 2px 22px;
+  color: var(--text-soft);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.report-item__body h2 {
+  margin: 16px 0 7px;
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 450;
+}
+
+.report-item__body h2:first-child {
+  margin-top: 0;
+}
+
+.report-item__body p {
+  margin: 0 0 9px;
+}
+
+.report-item__body ul {
+  margin: 0 0 11px;
+  padding-left: 18px;
+}
+
+@media (max-width: 800px) {
+  .performance-page {
+    width: calc(100% - 36px);
+    padding-top: 32px;
+  }
+
+  .performance-head {
+    display: block;
+  }
+
+  .performance-orbit {
+    margin-top: 20px;
+  }
+
+  .performance-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .grade-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .grade-row__attempts {
+    display: none;
+  }
+
+  .attempt-row {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .attempt-row time {
+    grid-column: 2;
+  }
+}
