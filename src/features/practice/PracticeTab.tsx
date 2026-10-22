@@ -20,6 +20,7 @@ import { LspProvider, documentUri, useLspClient } from "./LspProvider"
 import { LspStatus } from "./LspStatus"
 import { LovePreview } from "./love/LovePreview"
 import { RunPanel } from "./RunPanel"
+import { SubmitPanel } from "./SubmitPanel"
 import { TerminalPanel } from "./TerminalPanel"
 import { useEditorSettings } from "./useEditorSettings"
 import "./PracticeTab.css"
@@ -28,7 +29,11 @@ type SaveState = "idle" | "saving" | "saved" | "error"
 
 type FileItem = { name: string; content: string }
 
-export function PracticeTab(props: { lessonId: string; initialTaskId?: string }) {
+export function PracticeTab(props: {
+  lessonId: string
+  initialTaskId?: string
+  onQuestions?: () => void
+}) {
   return (
     <LspProvider>
       <PracticeTabInner {...props} />
@@ -39,9 +44,11 @@ export function PracticeTab(props: { lessonId: string; initialTaskId?: string })
 function PracticeTabInner({
   lessonId,
   initialTaskId,
+  onQuestions,
 }: {
   lessonId: string
   initialTaskId?: string
+  onQuestions?: () => void
 }) {
   const { data: lesson, isLoading, isError, refetch } = useLesson(lessonId)
   const { client: lspClient } = useLspClient()
@@ -344,6 +351,8 @@ function PracticeTabInner({
           )}
             </>
           )}
+
+          <SubmitPanel lesson={lesson} onQuestions={onQuestions} />
         </>
       )}
     </div>

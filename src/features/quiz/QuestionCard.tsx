@@ -61,6 +61,19 @@ export function QuestionCard({
             aria-label={question.prompt}
           />
         )}
+
+        {question.type === "single" && question.correct !== undefined && (
+          <div className="quiz-reveal">
+            <b>Правильный ответ: {question.options?.[question.correct]}</b>
+            {question.explanation && <p>{question.explanation}</p>}
+          </div>
+        )}
+        {question.type === "text" && question.referenceAnswer && (
+          <div className="quiz-reveal">
+            <b>Ориентир для ответа</b>
+            <p>{question.referenceAnswer}</p>
+          </div>
+        )}
       </div>
     </article>
   )

@@ -56,8 +56,10 @@ export function createCourseRouter(getContext: () => AppContext): Router {
         .all(lesson.id)
         .map((row: any) => [row.question_id, JSON.parse(row.answer_json)]),
     )
+    const passed = access.lessons[lesson.id] === "passed"
     res.json({
       ...publicLesson(lesson),
+      quiz: publicQuiz(lesson.quiz, passed),
       answers,
       access: access.lessons[lesson.id],
       chapterId: chapter?.id ?? null,

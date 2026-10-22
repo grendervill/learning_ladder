@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { ArrowRight, Check, CircleAlert, GraduationCap, LoaderCircle } from "lucide-react"
 import { useLesson } from "../../lib/useLesson"
 import { fetchJson } from "../../lib/api"
@@ -9,6 +10,7 @@ type SaveState = "idle" | "saving" | "saved" | "error"
 
 export function QuizTab({ lessonId, onPractice }: { lessonId: string; onPractice?: () => void }) {
   const { data: lesson, isLoading, isError, refetch } = useLesson(lessonId)
+  const queryClient = useQueryClient()
   const [answers, setAnswers] = useState<Record<string, number | string>>({})
   const [saveState, setSaveState] = useState<SaveState>("idle")
   const initialized = useRef(false)
@@ -45,6 +47,9 @@ export function QuizTab({ lessonId, onPractice }: { lessonId: string; onPractice
         method: "PUT",
         body: JSON.stringify({ answers: nextAnswers }),
       })
+      queryClient.setQueryData(["lesson", lessonId], (current: any) =>
+        current ? { ...current, answers: nextAnswers } : current,
+      )
       setSaveState("saved")
     } catch {
       setSaveState("error")

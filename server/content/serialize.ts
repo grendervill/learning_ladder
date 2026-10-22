@@ -1,6 +1,6 @@
 import type { LessonContent, Quiz, TaskContent } from "./types"
 
-export function publicQuiz(quiz: Quiz | null) {
+export function publicQuiz(quiz: Quiz | null, reveal = false) {
   if (!quiz) return null
   return {
     title: quiz.title,
@@ -11,6 +11,7 @@ export function publicQuiz(quiz: Quiz | null) {
           type: question.type,
           prompt: question.prompt,
           options: question.options,
+          ...(reveal ? { correct: question.correct, explanation: question.explanation } : {}),
         }
       }
       return {
@@ -18,6 +19,9 @@ export function publicQuiz(quiz: Quiz | null) {
         type: question.type,
         prompt: question.prompt,
         placeholder: question.placeholder,
+        ...(reveal
+          ? { referenceAnswer: question.referenceAnswer, criteria: question.criteria }
+          : {}),
       }
     }),
   }

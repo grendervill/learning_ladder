@@ -57,7 +57,7 @@ export function LessonPage({ lessonId }: { lessonId?: string }) {
     if (tab === "questions") {
       return <QuizTab lessonId={lesson.id} onPractice={() => setTab("practice")} />
     }
-    return <PracticeTab lessonId={lesson.id} />
+    return <PracticeTab lessonId={lesson.id} onQuestions={() => setTab("questions")} />
   }, [lesson, tab])
 
   if (isLoading) return <PageSkeleton label="Открываем урок" />

@@ -65,6 +65,12 @@ describe("computeAccess", () => {
     expect(access.chapters.next).toBe("locked")
   })
 
+  it("opens next lesson after passing the previous one", () => {
+    const access = computeAccess(snapshot, [passed("01"), passed("02")], [])
+    expect(access.lessons["03"]).toBe("available")
+    expect(access.lessons["04"]).toBe("locked")
+  })
+
   it("opens next lesson after pass and chapter quiz after all lessons", () => {
     const progress = [passed("01"), passed("02"), passed("03")]
     const access = computeAccess(snapshot, progress, [])

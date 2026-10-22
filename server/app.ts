@@ -8,11 +8,14 @@ import { createQuizRouter } from "./routes/quiz"
 import { createTaskFilesRouter } from "./routes/task-files"
 import { createRunRouter } from "./routes/run"
 import { createTerminalRouter } from "./routes/terminal"
+import { createSubmitRouter } from "./routes/submit"
+import { getMentorService, type MentorService } from "./mentor/service"
 
 export interface AppOptions {
   db?: DatabaseSync
   course?: CourseSnapshot
   progressPath?: string
+  mentor?: MentorService
 }
 
 export function createApp(options: AppOptions = {}): Express {
@@ -39,6 +42,7 @@ export function createApp(options: AppOptions = {}): Express {
   app.use("/api", createTaskFilesRouter(getContext))
   app.use("/api", createRunRouter(getContext))
   app.use("/api", createTerminalRouter(getContext))
+  app.use("/api", createSubmitRouter(getContext, () => options.mentor ?? getMentorService()))
   app.use("/api", createProgressRouter(getContext))
 
   app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

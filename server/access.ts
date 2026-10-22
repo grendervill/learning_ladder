@@ -54,7 +54,6 @@ export function computeAccess(
 
       if (status === "passed") {
         anyLessonPassed = true
-        nextAvailableSlot = false
       } else if (status === "available" || status === "in_progress") {
         nextAvailableSlot = false
       } else if (chapterUnlocked && nextAvailableSlot) {

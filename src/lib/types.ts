@@ -57,6 +57,10 @@ export interface LessonDetail {
       prompt: string
       options?: string[]
       placeholder?: string
+      correct?: number
+      explanation?: string
+      referenceAnswer?: string
+      criteria?: string[]
     }>
   } | null
   errors: Array<{ code: string; message: string }>
