@@ -1,0 +1,35 @@
+{
+  "title": "Квиз главы",
+  "questions": [
+    {
+      "id": "c1",
+      "type": "single",
+      "prompt": "Что такое Lua?",
+      "options": ["язык", "редактор", "база данных"],
+      "correct": 0,
+      "explanation": "Lua — язык программирования."
+    },
+    {
+      "id": "c2",
+      "type": "single",
+      "prompt": "Что печатает print?",
+      "options": ["текст", "файл", "окно"],
+      "correct": 0,
+      "explanation": "print выводит значения."
+    },
+    {
+      "id": "c3",
+      "type": "text",
+      "prompt": "Зачем нужен local?",
+      "referenceAnswer": "Ограничивает область видимости.",
+      "criteria": ["область видимости"]
+    },
+    {
+      "id": "c4",
+      "type": "text",
+      "prompt": "Что такое nil?",
+      "referenceAnswer": "Отсутствие значения.",
+      "criteria": ["отсутствие значения"]
+    }
+  ]
+}

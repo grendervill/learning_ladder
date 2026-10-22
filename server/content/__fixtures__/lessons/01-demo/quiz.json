@@ -1,0 +1,35 @@
+{
+  "title": "Проверь себя",
+  "questions": [
+    {
+      "id": "q1",
+      "type": "single",
+      "prompt": "Что делает print?",
+      "options": ["выводит", "удаляет", "ждёт"],
+      "correct": 0,
+      "explanation": "print выводит значения."
+    },
+    {
+      "id": "q2",
+      "type": "single",
+      "prompt": "Что такое local?",
+      "options": ["модификатор", "файл", "цикл"],
+      "correct": 0,
+      "explanation": "local ограничивает область видимости."
+    },
+    {
+      "id": "q3",
+      "type": "text",
+      "prompt": "Зачем нужен print?",
+      "referenceAnswer": "Чтобы вывести значение.",
+      "criteria": ["вывод"]
+    },
+    {
+      "id": "q4",
+      "type": "text",
+      "prompt": "Что такое nil?",
+      "referenceAnswer": "Отсутствие значения.",
+      "criteria": ["отсутствие"]
+    }
+  ]
+}

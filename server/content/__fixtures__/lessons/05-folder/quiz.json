@@ -1,0 +1,9 @@
+{
+  "title": "Проверь себя",
+  "questions": [
+    {"id": "q1", "type": "single", "prompt": "1?", "options": ["да", "нет"], "correct": 0, "explanation": "1"},
+    {"id": "q2", "type": "single", "prompt": "2?", "options": ["да", "нет"], "correct": 1, "explanation": "2"},
+    {"id": "q3", "type": "text", "prompt": "3?", "referenceAnswer": "три", "criteria": ["три"]},
+    {"id": "q4", "type": "text", "prompt": "4?", "referenceAnswer": "четыре", "criteria": ["четыре"]}
+  ]
+}

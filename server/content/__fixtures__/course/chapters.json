@@ -1,0 +1,11 @@
+{
+  "chapters": [
+    {
+      "id": "demo",
+      "title": "Демо",
+      "description": "Тестовая глава",
+      "lessonIds": ["01-demo", "03-broken"],
+      "quizFile": "demo.json"
+    }
+  ]
+}

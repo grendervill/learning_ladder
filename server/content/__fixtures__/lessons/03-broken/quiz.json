@@ -1,0 +1,21 @@
+{
+  "title": "Плохой квиз",
+  "questions": [
+    {
+      "id": "q1",
+      "type": "single",
+      "prompt": "Один?",
+      "options": ["да", "нет"],
+      "correct": 0,
+      "explanation": "Тест."
+    },
+    {
+      "id": "q2",
+      "type": "single",
+      "prompt": "Два?",
+      "options": ["да", "нет"],
+      "correct": 1,
+      "explanation": "Тест."
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "title": "Калькулятор",
+  "entry": "main.lua",
+  "files": ["main.lua", "lib/calc.lua"],
+  "args": ["--demo"],
+  "stdin": "2\n",
+  "kind": "code"
+}
