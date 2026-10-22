@@ -18,6 +18,7 @@ import { EditorSettings } from "./EditorSettings"
 import { FileTabs } from "./FileTabs"
 import { LspProvider, documentUri, useLspClient } from "./LspProvider"
 import { LspStatus } from "./LspStatus"
+import { LovePreview } from "./love/LovePreview"
 import { RunPanel } from "./RunPanel"
 import { TerminalPanel } from "./TerminalPanel"
 import { useEditorSettings } from "./useEditorSettings"
@@ -332,9 +333,7 @@ function PracticeTabInner({
           </div>
 
           {task.kind === "love" ? (
-            <div className="run-love-note">
-              Предпросмотр LÖVE подключается отдельным слоем. Код и файлы уже сохраняются.
-            </div>
+            <LovePreview files={files} entry={task.entry} />
           ) : (
             <RunPanel
               lessonId={lessonId}
