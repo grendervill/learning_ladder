@@ -352,6 +352,23 @@ a.sidebar-quiz:hover {
   font-size: 8.5px;
 }
 
+.sidebar-session--button {
+  width: 100%;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sidebar-session--button:disabled {
+  cursor: default;
+}
+
+.sidebar-session--button:not(:disabled):hover {
+  color: var(--sidebar-text);
+}
+
 .session-live {
   color: var(--sidebar-accent);
   fill: currentColor;

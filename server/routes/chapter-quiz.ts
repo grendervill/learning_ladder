@@ -4,6 +4,7 @@ import { accessFor } from "../access-data"
 import type { MentorService } from "../mentor/service"
 import type { MentorReviewRequest } from "../mentor/types"
 import { publicQuiz } from "../content/serialize"
+import { acquireMentorSession, recordActivity } from "../sessions/lifecycle"
 
 function findChapter(context: AppContext, chapterId: string) {
   const course = context.getCourse()
@@ -143,7 +144,8 @@ export function createChapterQuizRouter(
     }
 
     const mentor = getMentor()
-    const sessionId = await mentor.createSession()
+    const acquired = await acquireMentorSession(context, mentor)
+    const sessionId = acquired.sessionId
     let feedback
     try {
       feedback = await mentor.reviewLesson(sessionId, mentorRequest)
@@ -151,8 +153,13 @@ export function createChapterQuizRouter(
       next(error)
       return
     } finally {
-      await mentor.deleteSession(sessionId).catch(() => {})
+      await acquired.release()
     }
+    recordActivity(context, {
+      kind: "submit",
+      lessonId: chapter.id,
+      meta: { scope: "chapter", grade: feedback.grade },
+    })
 
     const passed = feedback.grade >= 4 && feedback.verdict === "pass"
     const now = new Date().toISOString()

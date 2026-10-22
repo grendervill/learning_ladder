@@ -3,6 +3,7 @@ import type { AppContext } from "../context"
 import { accessFor } from "../access-data"
 import { runLuaTask } from "../lua/runner"
 import type { TaskFile } from "../content/types"
+import { recordActivity } from "../sessions/lifecycle"
 
 function loadSavedFiles(context: AppContext, lessonId: string, taskId: string): TaskFile[] {
   return context.db
@@ -97,6 +98,7 @@ export function createRunRouter(getContext: () => AppContext): Router {
           new Date().toISOString(),
         )
 
+      recordActivity(context, { kind: "run", lessonId: lesson.id, taskId: task.id })
       res.json(result)
     } catch (error) {
       next(error)

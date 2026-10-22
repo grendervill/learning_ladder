@@ -5,6 +5,7 @@ import { accessFor } from "../access-data"
 import type { MentorService } from "../mentor/service"
 import type { MentorContext, MentorRun } from "../mentor/types"
 import type { TaskFile } from "../content/types"
+import { acquireMentorSession, recordActivity } from "../sessions/lifecycle"
 
 function savedFiles(context: AppContext, lessonId: string, taskId: string, starter: TaskFile[]): TaskFile[] {
   const saved = context.db
@@ -81,7 +82,8 @@ export function createMentorAskRouter(
     }
 
     const mentor = getMentor()
-    const sessionId = await mentor.createSession()
+    const acquired = await acquireMentorSession(context, mentor)
+    const sessionId = acquired.sessionId
     let answer
     try {
       answer = await mentor.askMentor(sessionId, mentorContext, question)
@@ -89,8 +91,9 @@ export function createMentorAskRouter(
       next(error)
       return
     } finally {
-      await mentor.deleteSession(sessionId).catch(() => {})
+      await acquired.release()
     }
+    recordActivity(context, { kind: "mentor_ask", lessonId, taskId, meta: { question } })
 
     const now = new Date().toISOString()
     context.db

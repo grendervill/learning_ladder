@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useEffect, useMemo } from "react"
 import { Link, useParams, useSearchParams } from "react-router-dom"
 import {
   AlertTriangle,
@@ -10,6 +10,7 @@ import {
   LockKeyhole,
 } from "lucide-react"
 import { useLesson } from "../../lib/useLesson"
+import { useSession } from "../session/SessionContext"
 import type { LessonDetail } from "../../lib/types"
 import { PageSkeleton } from "../course/CourseStates"
 import { PracticeTab } from "../practice/PracticeTab"
@@ -35,6 +36,7 @@ export function LessonPage({ lessonId }: { lessonId?: string }) {
   const params = useParams()
   const id = lessonId ?? params.lessonId
   const { data: lesson, isLoading, isError, error, refetch } = useLesson(id)
+  const { record } = useSession()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const rawTab = searchParams.get("tab")
@@ -44,6 +46,17 @@ export function LessonPage({ lessonId }: { lessonId?: string }) {
   const quizCount = lesson?.quiz?.questions.length ?? 0
   const taskCount = lesson?.tasks.length ?? 0
   const panelId = `lesson-panel-${tab}`
+
+  useEffect(() => {
+    if (!lesson || lesson.access === "locked") return
+    record("lesson_view", { lessonId: lesson.id })
+    const timer = window.setTimeout(() => {
+      record("reading", { lessonId: lesson.id })
+    }, 120_000)
+    return () => window.clearTimeout(timer)
+    // Recording uses the current session id; the lesson identity is the real dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lesson?.id])
 
   const content = useMemo(() => {
     if (!lesson) return null

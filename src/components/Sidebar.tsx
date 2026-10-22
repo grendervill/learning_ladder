@@ -10,6 +10,7 @@ import {
 } from "lucide-react"
 import { useEffect } from "react"
 import { useCourse } from "../lib/useCourse"
+import { useSession } from "../features/session/SessionContext"
 import type { LessonStatus } from "../lib/types"
 import { ThemeToggle } from "./ThemeToggle"
 import "./Sidebar.css"
@@ -45,6 +46,7 @@ function LessonNode({ status }: { status: LessonStatus }) {
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { data: course, isLoading, isError } = useCourse()
+  const { active: sessionActive, endSession } = useSession()
   const location = useLocation()
 
   useEffect(() => {
@@ -191,10 +193,16 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             <span>Успеваемость</span>
             <ChevronRight size={13} aria-hidden />
           </NavLink>
-          <div className="sidebar-session">
-            <Circle size={8} aria-hidden className={course?.currentSession ? "session-live" : ""} />
-            <span>{course?.currentSession ? "Занятие идёт" : "Сессия не начата"}</span>
-          </div>
+          <button
+            type="button"
+            className="sidebar-session sidebar-session--button"
+            onClick={() => void endSession()}
+            disabled={!sessionActive}
+            title={sessionActive ? "Завершить занятие и получить итог" : "Занятие ещё не начато"}
+          >
+            <Circle size={8} aria-hidden className={sessionActive ? "session-live" : ""} />
+            <span>{sessionActive ? "Занятие идёт · завершить" : "Сессия не начата"}</span>
+          </button>
           <ThemeToggle />
         </div>
       </aside>

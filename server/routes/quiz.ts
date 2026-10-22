@@ -1,6 +1,7 @@
 import { Router } from "express"
 import type { AppContext } from "../context"
 import { accessFor } from "../access-data"
+import { recordActivity } from "../sessions/lifecycle"
 
 export function createQuizRouter(getContext: () => AppContext): Router {
   const router = Router()
@@ -63,6 +64,11 @@ export function createQuizRouter(getContext: () => AppContext): Router {
     for (const [questionId, value] of values) {
       statement.run("lesson", lesson.id, questionId, JSON.stringify(value), savedAt)
     }
+    recordActivity(context, {
+      kind: "quiz_answer",
+      lessonId: lesson.id,
+      meta: { answered: values.length },
+    })
 
     res.json({ ok: true, savedAt })
   })

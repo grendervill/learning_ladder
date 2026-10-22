@@ -3,6 +3,7 @@ import type { AppContext } from "../context"
 import { accessFor } from "../access-data"
 import type { MentorService } from "../mentor/service"
 import type { MentorReviewRequest, MentorRun, MentorTaskInput } from "../mentor/types"
+import { acquireMentorSession, recordActivity } from "../sessions/lifecycle"
 
 function loadAnswers(context: AppContext, lessonId: string): Record<string, number | string> {
   return Object.fromEntries(
@@ -106,7 +107,8 @@ export function createSubmitRouter(getContext: () => AppContext, getMentor: () =
     }
 
     const mentor = getMentor()
-    const sessionId = await mentor.createSession()
+    const acquired = await acquireMentorSession(context, mentor)
+    const sessionId = acquired.sessionId
     let feedback
     try {
       feedback = await mentor.reviewLesson(sessionId, request)
@@ -114,8 +116,13 @@ export function createSubmitRouter(getContext: () => AppContext, getMentor: () =
       next(error)
       return
     } finally {
-      await mentor.deleteSession(sessionId).catch(() => {})
+      await acquired.release()
     }
+    recordActivity(context, {
+      kind: "submit",
+      lessonId: lesson.id,
+      meta: { grade: feedback.grade },
+    })
 
     const passed = feedback.grade >= 4 && feedback.verdict === "pass"
     const now = new Date().toISOString()

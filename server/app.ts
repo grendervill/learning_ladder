@@ -11,6 +11,7 @@ import { createTerminalRouter } from "./routes/terminal"
 import { createSubmitRouter } from "./routes/submit"
 import { createChapterQuizRouter } from "./routes/chapter-quiz"
 import { createMentorAskRouter } from "./routes/mentor-ask"
+import { createSessionRouter } from "./routes/session"
 import { getMentorService, type MentorService } from "./mentor/service"
 
 export interface AppOptions {
@@ -47,6 +48,7 @@ export function createApp(options: AppOptions = {}): Express {
   app.use("/api", createSubmitRouter(getContext, () => options.mentor ?? getMentorService()))
   app.use("/api", createChapterQuizRouter(getContext, () => options.mentor ?? getMentorService()))
   app.use("/api", createMentorAskRouter(getContext, () => options.mentor ?? getMentorService()))
+  app.use("/api", createSessionRouter(getContext, () => options.mentor ?? getMentorService()))
   app.use("/api", createProgressRouter(getContext))
 
   app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
