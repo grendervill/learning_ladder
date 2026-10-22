@@ -1,3 +1,4 @@
+import { useRef } from "react"
 import { useSearchParams } from "react-router-dom"
 import { Cpu, GraduationCap, Settings2, Stethoscope } from "lucide-react"
 import { ChecksTab } from "./ChecksTab"
@@ -15,11 +16,23 @@ type TabId = (typeof TABS)[number]["id"]
 
 export function SettingsPage() {
   const [params, setParams] = useSearchParams()
+  const tabsRef = useRef<HTMLDivElement>(null)
   const requested = params.get("tab")
   const tab: TabId = TABS.some((entry) => entry.id === requested) ? (requested as TabId) : "checks"
 
   function select(id: TabId) {
     setParams(id === "checks" ? {} : { tab: id }, { replace: true })
+    requestAnimationFrame(() => {
+      const tabs = tabsRef.current
+      if (!tabs) return
+      const top = tabs.getBoundingClientRect().top
+      if (top >= 0) return
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      window.scrollTo({
+        top: window.scrollY + top - 12,
+        behavior: reduceMotion ? "auto" : "smooth",
+      })
+    })
   }
 
   return (
@@ -32,7 +45,7 @@ export function SettingsPage() {
         <p>Проверки инструментов, промпт наставника и подключение нейросети. Всё хранится локально.</p>
       </header>
 
-      <div className="settings-tabs" role="tablist" aria-label="Разделы настроек">
+      <div className="settings-tabs" role="tablist" aria-label="Разделы настроек" ref={tabsRef}>
         {TABS.map((entry) => {
           const Icon = entry.icon
           const active = tab === entry.id
