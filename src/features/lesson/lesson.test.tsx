@@ -40,10 +40,19 @@ const lesson = {
 beforeEach(() => {
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => ({
-      ok: true,
-      json: async () => lesson,
-    })),
+    vi.fn(async (url: string) => {
+      if (String(url).includes("/files")) {
+        return {
+          ok: true,
+          json: async () => ({
+            files: lesson.tasks[0].files,
+            starterFiles: lesson.tasks[0].files,
+            kind: "code",
+          }),
+        }
+      }
+      return { ok: true, json: async () => lesson }
+    }),
   )
 })
 

@@ -5,6 +5,7 @@ import { buildContext, defaultContext, type AppContext } from "./context"
 import { createCourseRouter } from "./routes/course"
 import { createProgressRouter } from "./routes/progress"
 import { createQuizRouter } from "./routes/quiz"
+import { createTaskFilesRouter } from "./routes/task-files"
 
 export interface AppOptions {
   db?: DatabaseSync
@@ -33,6 +34,7 @@ export function createApp(options: AppOptions = {}): Express {
 
   app.use("/api", createCourseRouter(getContext))
   app.use("/api", createQuizRouter(getContext))
+  app.use("/api", createTaskFilesRouter(getContext))
   app.use("/api", createProgressRouter(getContext))
 
   app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

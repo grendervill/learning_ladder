@@ -14,6 +14,7 @@ describe("scanCourse", () => {
     expect(lesson.theoryMarkdown).toContain("## Теория")
     expect(lesson.theoryMarkdown).not.toContain("## ✏️ Задания")
     expect(lesson.practiceIntro).toContain("task1.lua")
+    expect(lesson.practiceIntro.startsWith("1.")).toBe(true)
     expect(lesson.tasks[0]).toMatchObject({
       id: "task1",
       entry: "task1.lua",

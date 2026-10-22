@@ -4,7 +4,7 @@ export interface TheorySplit {
   practiceIntro: string
 }
 
-const ASSIGNMENT_HEADING = /^##\s+✏️\s+Задан/im
+const ASSIGNMENT_HEADING = /^##\s+✏️\s+Задани[ея]/im
 
 export function splitTheory(markdown: string, fallbackTitle: string): TheorySplit {
   const titleMatch = markdown.match(/^#\s+(.+)$/m)

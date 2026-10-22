@@ -1,0 +1,48 @@
+.code-editor-host {
+  min-height: 390px;
+  background: var(--editor-bg);
+}
+
+.code-editor-host .cm-editor {
+  min-height: 390px;
+}
+
+.code-editor-host .cm-editor.cm-focused {
+  outline: none;
+}
+
+.code-editor-host .cm-scroller {
+  min-height: 390px;
+}
+
+.code-editor-host .cm-editor .cm-tooltip {
+  border: 1px solid var(--editor-line);
+  background: var(--editor-bg);
+  color: var(--editor-text);
+}
+
+.code-editor-host .cm-editor .cm-tooltip-autocomplete ul li[aria-selected] {
+  background: var(--editor-active);
+  color: var(--editor-text);
+}
+
+.code-editor-host .cm-editor .cm-button {
+  background: var(--editor-active);
+  background-image: none;
+  border: 1px solid var(--editor-line);
+  color: var(--editor-text);
+}
+
+.code-editor-host .cm-editor .cm-textfield {
+  background: var(--editor-bg);
+  border: 1px solid var(--editor-line);
+  color: var(--editor-text);
+}
+
+@media (max-width: 700px) {
+  .code-editor-host,
+  .code-editor-host .cm-editor,
+  .code-editor-host .cm-scroller {
+    min-height: 320px;
+  }
+}

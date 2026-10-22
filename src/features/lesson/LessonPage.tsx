@@ -11,8 +11,8 @@ import {
 } from "lucide-react"
 import { useLesson } from "../../lib/useLesson"
 import type { LessonDetail } from "../../lib/types"
-import { Markdown } from "../../lib/markdown"
 import { PageSkeleton } from "../course/CourseStates"
+import { PracticeTab } from "../practice/PracticeTab"
 import { QuizTab } from "../quiz/QuizTab"
 import { TheoryTab } from "./TheoryTab"
 import "./LessonPage.css"
@@ -57,7 +57,7 @@ export function LessonPage({ lessonId }: { lessonId?: string }) {
     if (tab === "questions") {
       return <QuizTab lessonId={lesson.id} onPractice={() => setTab("practice")} />
     }
-    return <PracticePreview lesson={lesson} onQuestions={() => setTab("questions")} />
+    return <PracticeTab lessonId={lesson.id} />
   }, [lesson, tab])
 
   if (isLoading) return <PageSkeleton label="Открываем урок" />
@@ -195,50 +195,3 @@ function EmptyPanel({ title, text }: { title: string; text: string }) {
   )
 }
 
-function PracticePreview({ lesson, onQuestions }: { lesson: LessonDetail; onQuestions: () => void }) {
-  return (
-    <div className="practice-preview">
-      <div className="practice-preview__head">
-        <div>
-          <span className="section-kicker">
-            <Code2 size={13} aria-hidden /> практика
-          </span>
-          <h2>Пора писать код</h2>
-          <p>
-            Редактор, запуск и проверка подключаются здесь. Пока посмотри, что предстоит сделать.
-          </p>
-        </div>
-        {lesson.practiceIntro && (
-          <div className="practice-intro">
-            <Markdown markdown={lesson.practiceIntro} />
-          </div>
-        )}
-      </div>
-      <div className="task-preview-list">
-        {lesson.tasks.map((task, index) => (
-          <article className="task-preview" key={task.id}>
-            <span className="task-preview__num">{String(index + 1).padStart(2, "0")}</span>
-            <div className="task-preview__body">
-              <h3>{task.title}</h3>
-              <p>{task.prompt.split("\n").slice(0, 2).join(" ")}</p>
-              <div className="task-preview__files">
-                {task.files.map((file) => (
-                  <span key={file.name}>{file.name}</span>
-                ))}
-                <span className="task-preview__kind">
-                  {task.kind === "terminal" ? "терминал" : task.kind === "love" ? "LÖVE" : "Lua"}
-                </span>
-              </div>
-            </div>
-            <span className="task-preview__state">не начато</span>
-          </article>
-        ))}
-      </div>
-      <div className="preview-actions">
-        <button type="button" className="preview-actions__ghost" onClick={onQuestions}>
-          Вернуться к вопросам
-        </button>
-      </div>
-    </div>
-  )
-}
