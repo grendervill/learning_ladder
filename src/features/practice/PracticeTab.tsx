@@ -17,6 +17,7 @@ import { CodeEditor } from "./CodeEditor"
 import { EditorSettings } from "./EditorSettings"
 import { FileTabs } from "./FileTabs"
 import { RunPanel } from "./RunPanel"
+import { TerminalPanel } from "./TerminalPanel"
 import { useEditorSettings } from "./useEditorSettings"
 import "./PracticeTab.css"
 
@@ -224,6 +225,10 @@ export function PracticeTab({
             </div>
           </details>
 
+          {task.kind === "terminal" ? (
+            <TerminalPanel lessonId={lessonId} taskId={task.id} />
+          ) : (
+            <>
           <div className="editor-shell">
             <div className="editor-toolbar">
               {filesQuery.isLoading ? (
@@ -323,6 +328,8 @@ export function PracticeTab({
               files={files}
               kind={task.kind}
             />
+          )}
+            </>
           )}
         </>
       )}
