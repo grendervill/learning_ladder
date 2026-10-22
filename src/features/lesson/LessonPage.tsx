@@ -95,7 +95,7 @@ export function LessonPage({ lessonId }: { lessonId?: string }) {
             </button>
           )}
           <Link to="/">
-            <ArrowLeft size={14} aria-hidden /> К программе
+            <ArrowLeft size={14} aria-hidden /> К курсам
           </Link>
         </div>
       </div>
@@ -105,7 +105,9 @@ export function LessonPage({ lessonId }: { lessonId?: string }) {
   return (
     <div className="lesson-page">
       <div className="lesson-breadcrumb">
-        <Link to="/">Программа</Link>
+        <Link to={lesson.course ? `/courses/${lesson.course.id}` : "/"}>
+          {lesson.course?.title ?? "Курс"}
+        </Link>
         <span>/</span>
         <span>{lesson.chapterTitle ?? "Урок"}</span>
         <span>/</span>
@@ -188,7 +190,7 @@ export function LessonPage({ lessonId }: { lessonId?: string }) {
         )}
         {tab === "practice" && (
           <span className="lesson-next__note">
-            Проверь код локально, затем сдай урок наставнику.
+            Проверь себя, затем сдай урок наставнику.
           </span>
         )}
       </div>

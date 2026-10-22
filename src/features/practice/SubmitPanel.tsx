@@ -67,6 +67,7 @@ export function SubmitPanel({
       setResult(response)
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["course"] }),
+        queryClient.invalidateQueries({ queryKey: ["courses"] }),
         queryClient.invalidateQueries({ queryKey: ["lesson", lesson.id] }),
         queryClient.invalidateQueries({ queryKey: ["progress"] }),
       ])
@@ -86,6 +87,7 @@ export function SubmitPanel({
       <FeedbackPanel
         result={result}
         onRetry={() => setResult(null)}
+        courseId={lesson.course?.id}
       />
     )
   }

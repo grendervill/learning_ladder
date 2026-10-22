@@ -1,7 +1,7 @@
 import { Router } from "express"
 import type { AppContext } from "../context"
 import { accessForCourse } from "../access-data"
-import { courseIdOf, courseView } from "../content/courses"
+import { courseIdOf, courseView, coursesOf } from "../content/courses"
 import type { MentorService } from "../mentor/service"
 import type { MentorReviewRequest } from "../mentor/types"
 import { publicQuiz } from "../content/serialize"
@@ -71,8 +71,12 @@ export function createChapterQuizRouter(
     const progress = context.db
       .prepare("select chapter_quiz_grade as grade, feedback_json as feedbackJson from chapter_progress where chapter_id = ?")
       .get(chapter.id) as any
+    const courseId = courseIdOf(chapter)
+    const courseMeta = coursesOf(course).find((item) => item.id === courseId)
     res.json({
       chapterId: chapter.id,
+      courseId,
+      courseTitle: courseMeta?.title ?? "",
       title: chapter.title,
       description: chapter.description,
       quiz: publicQuiz(chapter.quiz, passed),

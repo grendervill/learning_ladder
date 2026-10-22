@@ -4,6 +4,8 @@ import type { LessonDetail } from "./types"
 
 export interface ChapterQuizResponse {
   chapterId: string
+  courseId: string
+  courseTitle: string
   title: string
   description: string
   quiz: NonNullable<LessonDetail["quiz"]>

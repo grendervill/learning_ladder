@@ -4,9 +4,22 @@ import { dismissReport } from "./helpers"
 test("opens the program and shows the current lesson", async ({ page }) => {
   await page.goto("/")
   await dismissReport(page)
-  await expect(page.getByText("Лестница Lua").first()).toBeVisible()
-  await expect(page.getByRole("heading", { name: "Основы", level: 2 })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Твои курсы" })).toBeVisible()
+  const card = page.locator(".course-card:not(.course-card--create)").first()
+  await expect(card).toContainText("Lua")
+  await card.click()
+  await expect(page.getByRole("heading", { name: "Lua", level: 1 })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Основы", level: 3 })).toBeVisible()
   await expect(page.getByText("Переменные и типы", { exact: false }).first()).toBeVisible()
+})
+
+test("searches courses and clears an empty result", async ({ page }) => {
+  await page.goto("/")
+  await dismissReport(page)
+  await page.getByLabel("Поиск по курсам").fill("экономика")
+  await expect(page.getByText("По запросу «экономика» ничего не нашлось.")).toBeVisible()
+  await page.getByRole("button", { name: "Сбросить поиск" }).click()
+  await expect(page.locator(".course-card:not(.course-card--create)")).toHaveCount(1)
 })
 
 test("passes lesson 02 with a mocked mentor", async ({ page }) => {
@@ -64,6 +77,6 @@ test("passes lesson 02 with a mocked mentor", async ({ page }) => {
   await expect(page.getByText("Урок закрыт")).toBeVisible()
   await expect(page.getByRole("link", { name: /Следующий урок/ })).toHaveAttribute(
     "href",
-    "/lessons/03-control-flow",
+    "/courses/lua/lessons/03-control-flow",
   )
 })

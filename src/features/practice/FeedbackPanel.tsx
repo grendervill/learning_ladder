@@ -14,10 +14,12 @@ export function FeedbackPanel({
   result,
   onRetry,
   kind = "lesson",
+  courseId,
 }: {
   result: SubmitResponse
   onRetry: () => void
   kind?: "lesson" | "chapter"
+  courseId?: string
 }) {
   const feedback = result.feedback
   const next = result.nextLessonId
@@ -121,7 +123,10 @@ export function FeedbackPanel({
       <footer className="feedback__actions">
         {passed ? (
           next ? (
-            <Link to={`/lessons/${next}`} className="feedback__primary">
+            <Link
+              to={courseId ? `/courses/${courseId}/lessons/${next}` : `/lessons/${next}`}
+              className="feedback__primary"
+            >
               {kind === "chapter" ? "Первая папка следующей главы" : "Следующий урок"}{" "}
               <ArrowRight size={14} aria-hidden />
             </Link>

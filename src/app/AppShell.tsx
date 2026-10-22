@@ -29,7 +29,7 @@ export function AppShell() {
             </button>
             <div className="mobile-bar__brand">
               <MoonStar size={14} aria-hidden />
-              <span>Лестница Lua</span>
+              <span>Лестница обучения</span>
             </div>
             <ThemeToggle compact />
           </header>

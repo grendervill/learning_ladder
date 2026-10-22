@@ -20,7 +20,7 @@ import "./ChapterQuizPage.css"
 type SaveState = "idle" | "saving" | "saved" | "error"
 
 export function ChapterQuizPage() {
-  const { chapterId } = useParams()
+  const { chapterId, courseId: routeCourseId } = useParams()
   const { data, isLoading, isError, error, refetch } = useChapterQuiz(chapterId)
   const [answers, setAnswers] = useState<Record<string, number | string>>({})
   const [saveState, setSaveState] = useState<SaveState>("idle")
@@ -91,6 +91,7 @@ export function ChapterQuizPage() {
       setResult(response)
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["course"] }),
+        queryClient.invalidateQueries({ queryKey: ["courses"] }),
         queryClient.invalidateQueries({ queryKey: ["progress"] }),
         queryClient.invalidateQueries({ queryKey: ["chapter-quiz", chapterId] }),
       ])
@@ -123,8 +124,8 @@ export function ChapterQuizPage() {
             ? "Общий квиз становится доступен после сдачи всех папок главы на 4+."
             : "Проверь сервер и попробуй снова."}
         </p>
-        <Link to="/">
-          <ArrowLeft size={14} aria-hidden /> Вернуться к программе
+        <Link to={routeCourseId ? `/courses/${routeCourseId}` : "/"}>
+          <ArrowLeft size={14} aria-hidden /> Вернуться к курсу
         </Link>
       </div>
     )
@@ -136,6 +137,7 @@ export function ChapterQuizPage() {
         <FeedbackPanel
           result={result}
           kind="chapter"
+          courseId={data.courseId}
           onRetry={() => {
             setResult(null)
             void refetch()
@@ -149,8 +151,8 @@ export function ChapterQuizPage() {
 
   return (
     <div className="chapter-quiz-page">
-      <Link to="/" className="chapter-back">
-        <ArrowLeft size={14} aria-hidden /> Программа
+      <Link to={`/courses/${data.courseId}`} className="chapter-back">
+        <ArrowLeft size={14} aria-hidden /> {data.courseTitle || "Курс"}
       </Link>
       <header className="chapter-head">
         <span className="section-kicker">

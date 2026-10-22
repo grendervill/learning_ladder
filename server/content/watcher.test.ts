@@ -29,7 +29,7 @@ describe("startContentWatcher", () => {
       },
     })
     await once(watcher, "ready")
-    await new Promise((resolve) => setTimeout(resolve, 250))
+    await new Promise((resolve) => setTimeout(resolve, 600))
     writeFileSync(join(root, "courses", "lua", "lessons", "01-demo", "README.md"), "# Демо\n\n## Теория\n\nНовое\n")
     await new Promise<void>((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error("watcher timeout")), 10_000)
