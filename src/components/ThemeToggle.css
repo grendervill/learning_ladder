@@ -1,0 +1,27 @@
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid var(--sidebar-line);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--sidebar-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition), background var(--transition);
+}
+
+.theme-toggle:hover {
+  color: var(--sidebar-text);
+  border-color: color-mix(in srgb, var(--sidebar-accent) 34%, transparent);
+  background: color-mix(in srgb, var(--sidebar-accent) 7%, transparent);
+}
+
+.theme-toggle--compact {
+  width: 32px;
+  min-height: 32px;
+  padding: 0;
+}

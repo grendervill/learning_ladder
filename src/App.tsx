@@ -1,3 +1,5 @@
+import { AppRoutes } from "./app/router"
+
 export function App() {
-  return <main>Лестница Lua</main>
+  return <AppRoutes />
 }

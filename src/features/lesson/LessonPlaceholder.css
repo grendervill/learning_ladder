@@ -1,0 +1,45 @@
+.lesson-placeholder {
+  width: min(820px, calc(100% - 72px));
+  margin: 0 auto;
+  padding: 62px 0;
+}
+
+.lesson-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 11px;
+  text-decoration: none;
+}
+
+.lesson-placeholder__mark {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-top: 55px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--accent);
+}
+
+.lesson-placeholder__kicker {
+  margin: 22px 0 8px;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.lesson-placeholder h1 {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 400;
+  letter-spacing: -.04em;
+}
+
+.lesson-placeholder > p:last-child {
+  color: var(--muted);
+  font-size: 14px;
+}

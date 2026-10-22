@@ -1,0 +1,41 @@
+.performance-placeholder {
+  width: min(720px, calc(100% - 72px));
+  margin: 0 auto;
+  padding: 70px 0;
+}
+
+.performance-placeholder__icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--accent);
+}
+
+.performance-placeholder__kicker {
+  margin: 22px 0 8px;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.performance-placeholder h1 {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 400;
+  letter-spacing: -.04em;
+}
+
+.performance-placeholder p {
+  max-width: 480px;
+  margin: 0 0 20px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.performance-placeholder a {
+  font-size: 12px;
+}
