@@ -300,7 +300,7 @@ export interface GenerateQuizInput {
   tasks: Array<{ title: string; kind: string }>
 }
 
-export type MentorGenerate = (sessionId: string, prompt: string) => Promise<string>
+export type MentorGenerate = (sessionId: string, prompt: string, system?: string) => Promise<string>
 export type MentorCreateSession = () => Promise<string>
 export type MentorDeleteSession = (sessionId: string) => Promise<void>
 
@@ -339,13 +339,14 @@ export function createMentorService(options: MentorServiceOptions = {}): MentorS
     async reviewLesson(sessionId, request) {
       if (mock) return mockReview(request)
       const prompt = buildReviewPrompt(request)
-      let raw = await generate(sessionId, prompt)
+      let raw = await generate(sessionId, prompt, request.mentorPrompt)
       let result = tryParseReview(raw)
       const needsRetry = !result || containsReadyCode(raw)
       if (needsRetry) {
         raw = await generate(
           sessionId,
           `${prompt}\n\nПредыдущий ответ не прошёл проверку. Верни ТОЛЬКО валидный JSON по схеме, без Markdown-обёртки и без готового кода.`,
+          request.mentorPrompt,
         )
         result = tryParseReview(raw)
       }
@@ -355,11 +356,12 @@ export function createMentorService(options: MentorServiceOptions = {}): MentorS
     async askMentor(sessionId, context, question) {
       if (mock) return "Подумай, что именно делает эта строка. Что вернёт type(42)? Попробуй проверить в REPL."
       const prompt = buildAskPrompt(context, question)
-      let answer = await generate(sessionId, prompt)
+      let answer = await generate(sessionId, prompt, context.mentorPrompt)
       if (containsReadyCode(answer)) {
         answer = await generate(
           sessionId,
           `${prompt}\n\nУбери фенсед-блоки с готовым кодом. Оставь только подсказку и вопрос.`,
+          context.mentorPrompt,
         )
       }
       return stripReadyCode(answer)

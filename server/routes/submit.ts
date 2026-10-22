@@ -6,6 +6,7 @@ import type { MentorService } from "../mentor/service"
 import type { MentorReviewRequest, MentorRun, MentorTaskInput } from "../mentor/types"
 import { acquireMentorSession, recordActivity } from "../sessions/lifecycle"
 import { mergeTaskFiles } from "../files"
+import { courseIdForLesson, readMentorPrompt } from "../content/courses"
 
 function loadAnswers(context: AppContext, lessonId: string): Record<string, number | string> {
   return Object.fromEntries(
@@ -122,6 +123,7 @@ export function createSubmitRouter(getContext: () => AppContext, getMentor: () =
       })
 
     const chapter = course.chapters.find((item) => item.lessonIds.includes(lesson.id))
+    const courseId = courseIdForLesson(course, lesson.id)
     const request: MentorReviewRequest = {
       lessonId: lesson.id,
       lessonTitle: lesson.title,
@@ -131,6 +133,7 @@ export function createSubmitRouter(getContext: () => AppContext, getMentor: () =
       tasks,
       quiz,
       previousAttempts,
+      mentorPrompt: readMentorPrompt(context.root ?? process.cwd(), courseId),
     }
 
     const mentor = getMentor()

@@ -1,7 +1,7 @@
 import { Router } from "express"
 import type { AppContext } from "../context"
 import { accessForCourse } from "../access-data"
-import { courseIdOf, courseView, coursesOf } from "../content/courses"
+import { courseIdOf, courseView, coursesOf, readMentorPrompt } from "../content/courses"
 import type { MentorService } from "../mentor/service"
 import type { MentorReviewRequest } from "../mentor/types"
 import { publicQuiz } from "../content/serialize"
@@ -146,6 +146,7 @@ export function createChapterQuizRouter(
       chapterTitle: chapter.title,
       tasks: [],
       quiz,
+      mentorPrompt: readMentorPrompt(context.root ?? process.cwd(), courseIdOf(chapter)),
     }
 
     const mentor = getMentor()

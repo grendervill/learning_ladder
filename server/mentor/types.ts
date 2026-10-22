@@ -49,6 +49,7 @@ export interface MentorReviewRequest {
   tasks: MentorTaskInput[]
   quiz: MentorQuizQuestion[]
   previousAttempts?: Array<{ grade: number; summary: string; submittedAt: string }>
+  mentorPrompt?: string
 }
 
 export interface MentorTaskFeedback {
@@ -82,6 +83,7 @@ export interface MentorContext {
   code?: MentorFile[]
   lastRun?: MentorRun | null
   history?: Array<{ role: "user" | "assistant"; content: string }>
+  mentorPrompt?: string
 }
 
 export interface MentorClassification {

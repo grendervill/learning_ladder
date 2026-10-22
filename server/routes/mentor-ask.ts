@@ -8,6 +8,7 @@ import type { MentorContext, MentorRun } from "../mentor/types"
 import type { TaskFile } from "../content/types"
 import { acquireMentorSession, recordActivity } from "../sessions/lifecycle"
 import { mergeTaskFiles } from "../files"
+import { courseIdForLesson, readMentorPrompt } from "../content/courses"
 
 function savedFiles(context: AppContext, lessonId: string, taskId: string, starter: TaskFile[]): TaskFile[] {
   const saved = context.db
@@ -65,6 +66,10 @@ export function createMentorAskRouter(
         taskTitle: task?.title,
         code: task ? savedFiles(context, lessonId, task.id, task.files) : undefined,
         lastRun: task ? lastRun(context, lessonId, task.id) : null,
+        mentorPrompt: readMentorPrompt(
+          context.root ?? process.cwd(),
+          courseIdForLesson(course, lessonId),
+        ),
       }
     }
 

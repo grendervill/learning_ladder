@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { OpenCode } from "@opencode/client"
 import { Service } from "@opencode/client/service"
+import { DEFAULT_MENTOR_PROMPT } from "../content/defaults"
 import {
   KEEP_KEY,
   providerById,
@@ -8,10 +9,11 @@ import {
   resolveApiKey,
   type ReasoningLevel,
 } from "../settings"
-import { readMentorPrompt } from "./prompt"
 import { describeProviderError, generateDirect } from "./providers"
 
 const FALLBACK_MODEL = "opencode-go/deepseek-v4.1-flash"
+const DEFAULT_MENTOR_AGENT = "course-mentor"
+const CONSTRUCTOR_AGENT = "course-constructor"
 
 let clientPromise: ReturnType<typeof OpenCode.make> | null = null
 
@@ -32,21 +34,24 @@ function parseModelRef(model: string): { providerID: string; id: string } {
   return { providerID, id: rest.join("/") }
 }
 
-async function createOpencodeSession(title: string, model: string): Promise<string> {
+async function createOpencodeSession(title: string, model: string, agent = DEFAULT_MENTOR_AGENT): Promise<string> {
   const client = await getClient()
   const session = await client.session.create({
     title,
-    agent: "lua-mentor",
+    agent,
     model: parseModelRef(model),
     location: { directory: process.cwd() },
   } as any)
   return session.id
 }
 
-export async function createMentorSession(title = "LearningLua · наставник"): Promise<string> {
+export async function createMentorSession(
+  title = "LearningLua · наставник",
+  agent = DEFAULT_MENTOR_AGENT,
+): Promise<string> {
   const settings = readSettings()
   if (settings.network.provider !== "opencode") return `direct-${randomUUID()}`
-  return createOpencodeSession(title, settings.network.model || FALLBACK_MODEL)
+  return createOpencodeSession(title, settings.network.model || FALLBACK_MODEL, agent)
 }
 
 export async function deleteMentorSession(sessionId: string): Promise<void> {
@@ -55,7 +60,17 @@ export async function deleteMentorSession(sessionId: string): Promise<void> {
   await client.session.remove({ sessionID: sessionId })
 }
 
-export async function generateMentorReply(sessionId: string, prompt: string): Promise<string> {
+function opencodePrompt(prompt: string, system?: string): string {
+  const rules = system?.trim()
+  if (!rules) return prompt
+  return `Правила наставника этого курса:\n${rules}\n\nЗапрос приложения:\n${prompt}`
+}
+
+export async function generateMentorReply(
+  sessionId: string,
+  prompt: string,
+  system?: string,
+): Promise<string> {
   const settings = readSettings()
   const { provider, model, reasoning, baseUrl } = settings.network
   if (provider !== "opencode") {
@@ -65,17 +80,59 @@ export async function generateMentorReply(sessionId: string, prompt: string): Pr
       reasoning,
       apiKey: resolveApiKey(provider, settings) ?? "",
       baseUrl: provider === "custom" ? baseUrl : undefined,
-      system: readMentorPrompt(),
+      system: system?.trim() || DEFAULT_MENTOR_PROMPT,
       prompt,
       maxTokens: 4096,
     })
   }
   const client = await getClient()
   const result = await client.session.generate(
-    { sessionID: sessionId, prompt },
+    { sessionID: sessionId, prompt: opencodePrompt(prompt, system) },
     { signal: AbortSignal.timeout(180_000) },
   )
   return result.text
+}
+
+export interface GenerateWithAgentInput {
+  agent?: string
+  system?: string
+  prompt: string
+  timeoutMs?: number
+}
+
+/** Fresh session per call: the constructor and course mentor never share context. */
+export async function generateWithAgent(input: GenerateWithAgentInput): Promise<string> {
+  const settings = readSettings()
+  const { provider, model, reasoning, baseUrl } = settings.network
+  const timeoutMs = input.timeoutMs ?? 180_000
+  if (provider !== "opencode") {
+    return generateDirect({
+      provider,
+      model,
+      reasoning,
+      apiKey: resolveApiKey(provider, settings) ?? "",
+      baseUrl: provider === "custom" ? baseUrl : undefined,
+      system: input.system?.trim() || DEFAULT_MENTOR_PROMPT,
+      prompt: input.prompt,
+      maxTokens: 4096,
+      signal: AbortSignal.timeout(timeoutMs),
+    })
+  }
+  const sessionId = await createOpencodeSession(
+    "LearningLua · конструктор",
+    model || FALLBACK_MODEL,
+    input.agent ?? CONSTRUCTOR_AGENT,
+  )
+  try {
+    const client = await getClient()
+    const result = await client.session.generate(
+      { sessionID: sessionId, prompt: opencodePrompt(input.prompt, input.system) },
+      { signal: AbortSignal.timeout(timeoutMs) },
+    )
+    return result.text
+  } finally {
+    await deleteMentorSession(sessionId).catch(() => {})
+  }
 }
 
 export interface MentorTestInput {

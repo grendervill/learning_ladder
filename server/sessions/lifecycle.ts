@@ -133,20 +133,12 @@ export function buildSessionStats(context: AppContext, session: StudySession): S
 }
 
 export async function acquireMentorSession(
-  context: AppContext,
+  _context: AppContext,
   mentor: MentorService,
 ): Promise<{ sessionId: string; release: () => Promise<void> }> {
-  const active = getActiveSession(context.db)
-  if (active) {
-    let mentorSessionId = active.mentor_session_id
-    if (!mentorSessionId) {
-      mentorSessionId = await mentor.createSession()
-      context.db
-        .prepare("update study_sessions set mentor_session_id = ? where id = ?")
-        .run(mentorSessionId, active.id)
-    }
-    return { sessionId: mentorSessionId, release: async () => {} }
-  }
+  // Each mentor request gets its own session: no course can inherit another
+  // course's OpenCode context or prompt. The full lesson context travels in
+  // the request; the study-session DB row stays independent.
   const sessionId = await mentor.createSession()
   return {
     sessionId,
