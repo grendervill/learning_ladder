@@ -1,0 +1,37 @@
+{
+  "title": "Проверь себя",
+  "questions": [
+    {
+      "id": "type-number",
+      "type": "single",
+      "prompt": "Что вернёт type(42)?",
+      "options": ["number", "string", "integer", "nil"],
+      "correct": 0,
+      "explanation": "type возвращает строку с именем типа. У числа 42 это number."
+    },
+    {
+      "id": "false-values",
+      "type": "single",
+      "prompt": "Какие значения в Lua считаются ложными?",
+      "options": ["Только false и nil", "0 и пустая строка", "Только nil", "Все числа и строки"],
+      "correct": 0,
+      "explanation": "В Lua ложны только false и nil. Ноль и пустая строка — истинны."
+    },
+    {
+      "id": "why-local",
+      "type": "text",
+      "prompt": "Почему в Lua принято по умолчанию писать local?",
+      "placeholder": "Ответь своими словами…",
+      "referenceAnswer": "local ограничивает переменную блоком, не засоряет глобальное пространство имён и уменьшает число неожиданных связей между частями программы.",
+      "criteria": ["область видимости", "глобальные переменные", "предсказуемость"]
+    },
+    {
+      "id": "read-input",
+      "type": "text",
+      "prompt": "Как прочитать строку с клавиатуры и превратить её в число?",
+      "placeholder": "Напиши функцию и объяснение…",
+      "referenceAnswer": "Строка читается через io.read(), а число получается через tonumber(io.read()).",
+      "criteria": ["io.read", "tonumber"]
+    }
+  ]
+}
