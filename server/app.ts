@@ -16,6 +16,7 @@ import { createMentorAskRouter } from "./routes/mentor-ask"
 import { createSessionRouter } from "./routes/session"
 import { createContentRouter } from "./routes/content"
 import { createEventsRouter } from "./routes/events"
+import { createSettingsRouter } from "./routes/settings"
 import { getMentorService, type MentorService } from "./mentor/service"
 
 export interface AppOptions {
@@ -57,6 +58,7 @@ export function createApp(options: AppOptions = {}): Express {
   app.use("/api", createContentRouter(getContext, () => options.mentor ?? getMentorService()))
   app.use("/api", createEventsRouter())
   app.use("/api", createProgressRouter(getContext))
+  app.use("/api", createSettingsRouter(getContext))
 
   const dist = join(process.cwd(), "dist")
   if (process.env.NODE_ENV === "production" && existsSync(dist)) {

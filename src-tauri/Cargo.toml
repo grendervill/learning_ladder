@@ -1,0 +1,19 @@
+[package]
+name = "learninglua"
+version = "0.1.0"
+description = "Локальный учебный кабинет по Lua"
+authors = ["LearningLua"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

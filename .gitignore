@@ -8,3 +8,6 @@ reports/
 test-results/
 playwright-report/
 Без названия.md
+
+src-tauri/target/
+src-tauri/gen/

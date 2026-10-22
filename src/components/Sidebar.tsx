@@ -7,6 +7,7 @@ import {
   GraduationCap,
   LoaderCircle,
   Lock,
+  Settings,
   Sparkles,
 } from "lucide-react"
 import { useEffect } from "react"
@@ -206,6 +207,11 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           <NavLink to="/performance" className="sidebar-footer__link">
             <ChartNoAxesColumn size={15} aria-hidden />
             <span>Успеваемость</span>
+            <ChevronRight size={13} aria-hidden />
+          </NavLink>
+          <NavLink to="/settings" className="sidebar-footer__link">
+            <Settings size={15} aria-hidden />
+            <span>Настройки</span>
             <ChevronRight size={13} aria-hidden />
           </NavLink>
           <button
