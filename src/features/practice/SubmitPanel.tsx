@@ -46,6 +46,7 @@ export function SubmitPanel({
   const queryClient = useQueryClient()
 
   const total = lesson.quiz?.questions.length ?? 0
+  const general = lesson.course?.mode === "general" && lesson.tasks.length === 0
   const answered = useMemo(() => {
     if (!lesson.quiz) return 0
     return lesson.quiz.questions.filter((question) => {
@@ -100,19 +101,22 @@ export function SubmitPanel({
         </span>
         <h3>Готов сдать урок?</h3>
         <p>
-          Наставник проверит код, вывод и ответы на вопросы. Оценка 4+ откроет следующую
-          папку. До сдачи можно всё менять.
+          {general
+            ? "Наставник проверит ответы на тестовые и письменные вопросы. Оценка 4+ откроет следующий урок. До сдачи можно всё менять."
+            : "Наставник проверит код, вывод и ответы на вопросы. Оценка 4+ откроет следующий шаг. До сдачи можно всё менять."}
         </p>
         <div className="submit-readiness">
           <span className={answered === total ? "done" : ""}>
             {answered === total ? <CheckCircle2 size={12} aria-hidden /> : <CircleAlert size={12} aria-hidden />}
             вопросы: {answered} / {total}
           </span>
-          <span className="done">
-            <CheckCircle2 size={12} aria-hidden /> задания: {lesson.tasks.length}
-          </span>
+          {!general && (
+            <span className="done">
+              <CheckCircle2 size={12} aria-hidden /> задания: {lesson.tasks.length}
+            </span>
+          )}
         </div>
-        {!ready && total > 0 && (
+        {!ready && total > 0 && !general && (
           <button type="button" className="submit-panel__questions" onClick={onQuestions}>
             Ответить на вопросы <ArrowRight size={13} aria-hidden />
           </button>

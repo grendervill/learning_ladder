@@ -6,7 +6,7 @@ import type { MentorService } from "../mentor/service"
 import type { MentorReviewRequest, MentorRun, MentorTaskInput } from "../mentor/types"
 import { acquireMentorSession, recordActivity } from "../sessions/lifecycle"
 import { mergeTaskFiles } from "../files"
-import { courseIdForLesson, readMentorPrompt } from "../content/courses"
+import { courseIdForLesson, courseMetaForLesson, readMentorPrompt } from "../content/courses"
 
 function loadAnswers(context: AppContext, lessonId: string): Record<string, number | string> {
   return Object.fromEntries(
@@ -79,7 +79,9 @@ export function createSubmitRouter(getContext: () => AppContext, getMentor: () =
     const blockingContentErrors = lesson.errors.filter((error) =>
       ["lesson_missing_readme", "lesson_missing_tasks", "lesson_read_error"].includes(error.code),
     )
-    if (lesson.tasks.length === 0 || blockingContentErrors.length > 0) {
+    const courseMeta = courseMetaForLesson(course, lesson.id)
+    const generalQuizPractice = courseMeta.mode === "general" && Boolean(lesson.quiz)
+    if ((lesson.tasks.length === 0 && !generalQuizPractice) || blockingContentErrors.length > 0) {
       res.status(400).json({
         error: "lesson_incomplete",
         errors: blockingContentErrors.map((error) => error.code),

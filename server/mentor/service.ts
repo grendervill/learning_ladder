@@ -111,6 +111,11 @@ ${terminal || "(команд не было)"}`
     })
     .join("\n\n")
 
+  const practiceNote =
+    request.tasks.length === 0 && request.quiz.length > 0
+      ? "\nПрактика: отдельного задания нет — квиз ниже является практикой. Проверь понимание и письменные ответы, а не только совпадение с ключом.\n"
+      : ""
+
   const quiz = request.quiz
     .map((question) => {
       const answer =
@@ -147,7 +152,7 @@ ${terminal || "(команд не было)"}`
 - если ответ на вопрос пустой или бессмысленный — correct=false;
 - grade 2–5, verdict "pass" только при grade >= 4;
 - верни только JSON без Markdown-обёртки.
-
+${practiceNote}
 Предыдущие попытки:
 ${previous || "нет"}
 

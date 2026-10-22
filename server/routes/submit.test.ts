@@ -3,6 +3,7 @@ import request from "supertest"
 import { describe, expect, it } from "vitest"
 import { createApp } from "../app"
 import { migrate, openDatabase } from "../db"
+import { DEFAULT_COURSE_META } from "../content/defaults"
 import type { MentorService } from "../mentor/service"
 import type { CourseSnapshot, LessonContent, Quiz } from "../content/types"
 
@@ -126,6 +127,53 @@ function makeApp(grade: number, mentorOverride?: MentorService) {
   }
 }
 
+const generalCourse: CourseSnapshot = {
+  version: "test",
+  courses: [
+    {
+      ...DEFAULT_COURSE_META,
+      id: "econ",
+      title: "Экономика",
+      description: "Личные финансы",
+      theme: "amber",
+      icon: "chart",
+      mode: "general",
+      builtIn: false,
+      createdAt: "2026-10-22T00:00:00.000Z",
+    },
+  ],
+  chapters: [
+    {
+      id: "econ-c1",
+      courseId: "econ",
+      title: "Деньги",
+      description: "",
+      lessonIds: ["econ-1"],
+      quiz: null,
+      errors: [],
+    },
+  ],
+  lessons: {
+    "econ-1": { ...lesson("econ-1"), courseId: "econ", tasks: [] },
+  },
+  unassigned: [],
+  errors: [],
+}
+
+function makeGeneralApp(grade = 4) {
+  const db = openDatabase(":memory:")
+  migrate(db)
+  return {
+    db,
+    app: createApp({
+      db,
+      course: generalCourse,
+      progressPath: resolve(process.cwd(), "does-not-exist.md"),
+      mentor: fakeMentor(grade),
+    }),
+  }
+}
+
 describe("lesson submit", () => {
   it("unlocks next lesson on grade 4 and stores a full attempt", async () => {
     const { db, app } = makeApp(4)
@@ -205,6 +253,16 @@ describe("lesson submit", () => {
     expect(res.body.passed).toBe(false)
     const course = await request(app).get("/api/course")
     expect(course.body.access.lessons["03-control-flow"]).toBe("locked")
+  })
+
+  it("submits a general lesson whose practice is the 50/50 quiz", async () => {
+    const { app, db } = makeGeneralApp(4)
+    const res = await request(app).post("/api/lessons/econ-1/submit").send({})
+    expect(res.status).toBe(200)
+    expect(res.body.passed).toBe(true)
+    const attempt = db.prepare("select * from attempts order by id desc limit 1").get() as any
+    expect(attempt.scope_id).toBe("econ-1")
+    expect(JSON.parse(attempt.code_json)).toEqual({})
   })
 
   it("refuses to submit an incomplete lesson", async () => {

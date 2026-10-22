@@ -84,4 +84,54 @@ describe("LessonPage", () => {
     expect(document.querySelector("script")).toBeNull()
     expect(screen.getByText("<script>alert(1)</script>")).toBeInTheDocument()
   })
+
+  it("uses a single practice tab with the 50/50 quiz for general courses", async () => {
+    const general = {
+      id: "econ-1",
+      title: "Инфляция",
+      theoryMarkdown: "## Инфляция\n\nЦены растут, деньги дешевеют.",
+      practiceIntro: "",
+      tasks: [],
+      quiz: {
+        title: "Проверка знаний",
+        questions: [
+          { id: "q1", type: "single", prompt: "Что растёт?", options: ["Цены", "Налоги"] },
+          { id: "q2", type: "single", prompt: "Что падает?", options: ["Спрос", "Способность"] },
+          { id: "q3", type: "text", prompt: "Объясните причину." },
+          { id: "q4", type: "text", prompt: "Приведите пример." },
+        ],
+      },
+      errors: [],
+      answers: {},
+      access: "available",
+      chapterId: "econ-c1",
+      chapterTitle: "Деньги",
+      course: {
+        id: "econ",
+        title: "Экономика",
+        mode: "general",
+        settings: {
+          runtime: "none",
+          runCommand: "",
+          lspCommand: "",
+          lspArgs: [],
+          fileExtension: ".txt",
+          entry: "main.txt",
+        },
+      },
+    }
+    ;(fetch as unknown as ReturnType<typeof vi.fn>).mockImplementation(async () => ({
+      ok: true,
+      json: async () => general,
+    }))
+
+    renderWithProviders(<LessonPage lessonId="econ-1" />)
+    expect(await screen.findByRole("heading", { name: "Инфляция", level: 1 })).toBeInTheDocument()
+    expect(screen.getByRole("tab", { name: "Практика" })).toBeInTheDocument()
+    expect(screen.queryByRole("tab", { name: "Вопросы" })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("tab", { name: "Практика" }))
+    expect(await screen.findByText("Проверка знаний")).toBeInTheDocument()
+    expect(screen.getByText("Готов сдать урок?")).toBeInTheDocument()
+  })
 })
