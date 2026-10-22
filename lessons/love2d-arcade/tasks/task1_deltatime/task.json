@@ -1,0 +1,9 @@
+{
+  "title": "Скорость в пикселях в секунду",
+  "kind": "love",
+  "entry": "main.lua",
+  "files": ["main.lua"],
+  "args": [],
+  "stdin": "",
+  "timeoutMs": 3000
+}

@@ -1,0 +1,9 @@
+{
+  "title": "Поймай цель",
+  "kind": "love",
+  "entry": "main.lua",
+  "files": ["main.lua"],
+  "args": [],
+  "stdin": "",
+  "timeoutMs": 3000
+}

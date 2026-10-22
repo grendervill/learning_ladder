@@ -1,0 +1,9 @@
+{
+  "title": "Меню → игра → финал",
+  "kind": "love",
+  "entry": "main.lua",
+  "files": ["main.lua"],
+  "args": [],
+  "stdin": "",
+  "timeoutMs": 3000
+}
