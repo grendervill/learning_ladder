@@ -33,3 +33,131 @@ export const DEFAULT_CONSTRUCTOR_PROMPT = `Ты — методист и конс
 - приложение пришлёт точную JSON-схему в задании; следуй ей без отклонений;
 - возвращай только JSON, без Markdown-обёртки и без лишних комментариев;
 - все тексты — на русском, если пользователь не попросил другой язык.`
+
+import type { CourseSettings } from "../content/types"
+import { VOLUME_LIMITS, type ClarifyAnswer, type GenerateCourseInput, type Outline } from "./schema"
+
+function formatAnswers(answers: ClarifyAnswer[]): string {
+  if (answers.length === 0) return "Пользователь не стал уточнять — реши сам."
+  return answers
+    .filter((answer) => answer.answer.trim())
+    .map((answer) => `- ${answer.question}: ${answer.answer}`)
+    .join("\n")
+}
+
+export function clarifyPrompt(topic: string): string {
+  return `Пользователь хочет учиться по теме: "${topic}".
+
+Сформулируй 2–3 уточняющих вопроса, которые помогут собрать курс именно под него.
+Не спрашивай про объём — приложение спросит отдельно. Вопросы должны быть
+конкретными, с вариантами, а не общими пожеланиями.
+
+Верни только JSON:
+{"questions":[{"id":"goal","prompt":"...","type":"single|multiple","options":["...","..."]}]}
+
+У каждого вопроса 2–6 вариантов. Тип single — можно выбрать один вариант,
+multiple — несколько. Пиши по-русски.`
+}
+
+export function outlinePrompt(input: GenerateCourseInput): string {
+  const limits = VOLUME_LIMITS[input.volume]
+  return `Запрос ученика: "${input.topic}"
+Уточнения:
+${formatAnswers(input.answers)}
+
+Объём: ${input.volume} — от ${limits.min} до ${limits.max} уроков.
+
+Собери карточку и структуру курса. Верни только JSON:
+{
+  "title": "...",
+  "description": "...",
+  "theme": "forest|amber|ocean|plum|clay",
+  "icon": "book|code|chart|globe|atom|scale|palette|heart",
+  "mode": "general|math|programming",
+  "runtime": "none|lua|c|cpp|python|javascript|custom",
+  "mentorPrompt": "...",
+  "chapters": [{"title": "...", "description": "...", "lessons": ["...", "..."]}]
+}
+
+Требования:
+- название — 2–6 слов, описание — 1–2 предложения;
+- режим: general — гуманитарный разбор, math — формулы и шаги, programming — код;
+- для general и math runtime "none"; для programming выбери язык;
+- глав 1–4, в каждой 1–8 уроков; всего уроков — в указанном объёме;
+- mentorPrompt — отдельные правила наставника этого курса: объяснять, задавать
+  вопросы, проверять процесс и не давать готовых решений;
+- никаких готовых решений и лишних полей.`
+}
+
+export interface LessonPromptInput {
+  topic: string
+  outline: Outline
+  chapterTitle: string
+  chapterDescription: string
+  lessonTitle: string
+  mode: "general" | "math" | "programming"
+  settings: CourseSettings
+  mentorPrompt: string
+  index: number
+  total: number
+}
+
+export function lessonPrompt(input: LessonPromptInput): string {
+  const { outline, chapterTitle, chapterDescription, lessonTitle, mode, settings, index, total } = input
+  const quizShape = `"quiz": {
+    "title": "...",
+    "questions": [
+      {"id":"q1","type":"single","prompt":"...","options":["...","..."],"correct":0,"explanation":"..."},
+      {"id":"q2","type":"single","prompt":"...","options":["...","..."],"correct":0,"explanation":"..."},
+      {"id":"q3","type":"text","prompt":"...","referenceAnswer":"...","criteria":["..."]},
+      {"id":"q4","type":"text","prompt":"...","referenceAnswer":"...","criteria":["..."]}
+    ]
+  }`
+
+  const practice =
+    mode === "programming"
+      ? `"tasks": [{
+    "title": "...",
+    "prompt": "...",
+    "kind": "code",
+    "entry": "${settings.entry}",
+    "files": [{"name":"${settings.entry}","content":"стартовый код с TODO, без готового решения"}],
+    "args": [],
+    "stdin": "",
+    "timeoutMs": 5000
+  }]`
+      : mode === "math"
+        ? `"tasks": [{
+    "title": "...",
+    "prompt": "Задача, которую нужно решить по шагам.",
+    "kind": "steps",
+    "entry": "solution.json",
+    "files": [{"name":"solution.json","content":"{\\"steps\\":[],\\"answer\\":\\"\\"}"}],
+    "criteria": ["верный ход", "каждое преобразование объяснено", "верный финальный ответ"]
+  }]`
+        : `"tasks": []`
+
+  return `Курс: "${outline.title}" — ${outline.description}
+Режим: ${mode}. Среда: ${settings.runtime} (${settings.fileExtension}).
+Наставник курса: ${input.mentorPrompt}
+Тема ученика: ${input.topic}
+Глава: ${chapterTitle}${chapterDescription ? ` — ${chapterDescription}` : ""}
+Урок ${index} из ${total}: ${lessonTitle}
+
+Напиши урок. Верни только JSON:
+{
+  "title": "${lessonTitle}",
+  "theoryMarkdown": "...",
+  "practiceIntro": "...",
+  ${quizShape},
+  ${practice}
+}
+
+Требования:
+- теория на русском, 500–900 слов, живая и конкретная, с примерами;
+- не давай готовых ответов и полных решений;
+- квиз строго 50/50: 2 тестовых вопроса (single, 3–4 варианта, correct и
+  explanation) и 2 письменных (text, referenceAnswer и criteria);
+- ${mode === "general" ? "практика — этот же квиз, tasks должен быть пустым" : mode === "math" ? "практика — одна задача kind=steps с шагами и финальным ответом" : "практика — одна код-задача kind=code с запуском"}.`
+}
+

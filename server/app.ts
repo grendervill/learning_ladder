@@ -7,7 +7,9 @@ import { buildContext, defaultContext, type AppContext } from "./context"
 import { createCourseRouter } from "./routes/course"
 import { createCoursesRouter } from "./routes/courses"
 import { createProjectRouter } from "./routes/project"
+import { createCourseBuilderRouter } from "./routes/course-builder"
 import type { ProjectManager } from "./project-controller"
+import { createCourseGenerator, type CourseGenerator } from "./courses/generator"
 import { createProgressRouter } from "./routes/progress"
 import { createQuizRouter } from "./routes/quiz"
 import { createTaskFilesRouter } from "./routes/task-files"
@@ -30,6 +32,7 @@ export interface AppOptions {
   staticRoot?: string
   getContext?: () => AppContext
   project?: ProjectManager
+  courseBuilder?: CourseGenerator
   mentor?: MentorService
   context?: AppContext
 }
@@ -49,12 +52,15 @@ export function createApp(options: AppOptions = {}): Express {
     return context
   })
 
+  const courseBuilder = options.courseBuilder ?? createCourseGenerator({ getContext })
+
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok" })
   })
 
   app.use("/api", createCourseRouter(getContext))
   app.use("/api", createCoursesRouter(getContext))
+  app.use("/api", createCourseBuilderRouter(courseBuilder))
   app.use("/api", createProjectRouter(getContext, options.project))
   app.use("/api", createQuizRouter(getContext))
   app.use("/api", createTaskFilesRouter(getContext))
