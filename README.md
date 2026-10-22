@@ -1,4 +1,4 @@
-# 🪜 Лестница Lua — от нуля до продвинутого уровня
+# 🪜 Лестница обучения — от нуля до продвинутого уровня
 
 > Твой учебник. Тебе не нужен интернет — всё внутри.
 
@@ -6,18 +6,18 @@
 
 | Ступень | Папка | Тема | Уровень |
 |---|---|---|---|
-| 1 | [lessons/01-hello-lua](lessons/01-hello-lua) | Первый запуск, REPL, `print`, комментарии, `lua file.lua` | 🟢 Старт |
-| 2 | [lessons/02-variables-types](lessons/02-variables-types) | Переменные, 8 типов, `nil`, числа, строки, `..`, ввод | 🟢 База |
-| 3 | [lessons/03-control-flow](lessons/03-control-flow) | `if`, `while`, `repeat`, `for`, `break`, truthiness | 🟢 База |
-| 4 | [lessons/04-functions](lessons/04-functions) | Функции, `local`, `return`, vararg `...`, рекурсия | 🟡 Уверенный |
-| 5 | [lessons/05-tables-basics](lessons/05-tables-basics) | Таблицы-массивы, словари, `#`, `ipairs`/`pairs`, `table` | 🟡 Уверенный |
-| 6 | [lessons/06-stdlib](lessons/06-stdlib) | `string`, `math`, `os`, `table` углублённо | 🟡 Уверенный |
-| 7 | [lessons/07-modules](lessons/07-modules) | Файлы-модули, `require`, `package.path`, свой модуль | 🟠 Средний |
-| 8 | [lessons/08-metatables-oop](lessons/08-metatables-oop) | Метатаблицы, `__index`, `__add`, ООП: классы через прототипы | 🟠 Средний |
-| 9 | [lessons/09-closures-errors](lessons/09-closures-errors) | Замыкания, upvalue, итераторы, `pcall`/`xpcall`, `error`/`assert` | 🔴 Продвинутый |
-| 10 | [lessons/10-coroutines](lessons/10-coroutines) | Корутины: `create`, `resume`, `yield`, конвейеры, планировщик | 🔴 Продвинутый |
-| 11 | [lessons/11-env-gc](lessons/11-env-gc) | Окружения `_ENV`, сборка мусора, слабые таблицы, `__gc`, отладка | ⚫ Эксперт |
-| 12 | [lessons/12-final-project](lessons/12-final-project) | Финальный проект: мини-игра / парсер / планировщик задач | ⚫ Эксперт |
+| 1 | [lessons/01-hello-lua](courses/lua/lessons/01-hello-lua) | Первый запуск, REPL, `print`, комментарии, `lua file.lua` | 🟢 Старт |
+| 2 | [lessons/02-variables-types](courses/lua/lessons/02-variables-types) | Переменные, 8 типов, `nil`, числа, строки, `..`, ввод | 🟢 База |
+| 3 | [lessons/03-control-flow](courses/lua/lessons/03-control-flow) | `if`, `while`, `repeat`, `for`, `break`, truthiness | 🟢 База |
+| 4 | [lessons/04-functions](courses/lua/lessons/04-functions) | Функции, `local`, `return`, vararg `...`, рекурсия | 🟡 Уверенный |
+| 5 | [lessons/05-tables-basics](courses/lua/lessons/05-tables-basics) | Таблицы-массивы, словари, `#`, `ipairs`/`pairs`, `table` | 🟡 Уверенный |
+| 6 | [lessons/06-stdlib](courses/lua/lessons/06-stdlib) | `string`, `math`, `os`, `table` углублённо | 🟡 Уверенный |
+| 7 | [lessons/07-modules](courses/lua/lessons/07-modules) | Файлы-модули, `require`, `package.path`, свой модуль | 🟠 Средний |
+| 8 | [lessons/08-metatables-oop](courses/lua/lessons/08-metatables-oop) | Метатаблицы, `__index`, `__add`, ООП: классы через прототипы | 🟠 Средний |
+| 9 | [lessons/09-closures-errors](courses/lua/lessons/09-closures-errors) | Замыкания, upvalue, итераторы, `pcall`/`xpcall`, `error`/`assert` | 🔴 Продвинутый |
+| 10 | [lessons/10-coroutines](courses/lua/lessons/10-coroutines) | Корутины: `create`, `resume`, `yield`, конвейеры, планировщик | 🔴 Продвинутый |
+| 11 | [lessons/11-env-gc](courses/lua/lessons/11-env-gc) | Окружения `_ENV`, сборка мусора, слабые таблицы, `__gc`, отладка | ⚫ Эксперт |
+| 12 | [lessons/12-final-project](courses/lua/lessons/12-final-project) | Финальный проект: мини-игра / парсер / планировщик задач | ⚫ Эксперт |
 
 ## Правила работы (прочитай внимательно!)
 
@@ -26,7 +26,7 @@
 2. Открой папку `tasks/`. Там файлы `task1_*.lua`, `task2_*.lua`...
 3. В каждом файле — комментарий с заданием и заготовка (функция-пустышка с `TODO`).
 4. Допиши код прямо в этом файле.
-5. Запусти: `lua lessons/XX-.../tasks/task1_*.lua`
+5. Запусти: `lua courses/lua/lessons/XX-.../tasks/task1_*.lua`
 6. Когда всё работает — позови меня: **«Проверь урок 03»**. Я проверю и выставлю честную оценку.
 
 ### 2. Как я работаю как ментор
@@ -47,7 +47,7 @@ lua
 # Ctrl+D (macOS/Linux) или Ctrl+Z, Enter (Windows)
 
 # Запуск файла:
-lua lessons/01-hello-lua/tasks/task1_hello.lua
+lua courses/lua/lessons/01-hello-lua/tasks/task1_hello.lua
 
 # Проверка версии:
 lua -v
@@ -68,7 +68,7 @@ lua -v
 Для перехода на следующую ступень нужен **минимум 4**. Иначе — доработка.
 
 ### 5. Твой первый шаг
-Иди в [Урок 01](lessons/01-hello-lua) и читай `README.md`.
+Иди в [Урок 01](courses/lua/lessons/01-hello-lua) и читай `README.md`.
 
 ---
 
@@ -136,6 +136,6 @@ npm run tauri:build # собрать .app для macOS
   Google Gemini и свой OpenAI-совместимый сервис. Ключи хранятся только локально
   в `data/settings.json` и не попадают в интерфейс в открытом виде.
 
-Контент читается из `lessons/` и `course/` на лету: новый раздел теории,
+Контент курса читается из `courses/lua/` на лету: новый раздел теории,
 файл задания или квиз подхватываются без перезапуска. Новая папка урока
 появится в разделе «Новые материалы», и учитель распределит её по главам.

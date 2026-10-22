@@ -4,6 +4,7 @@ import { join, resolve } from "node:path"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { DEFAULT_COURSE_META, DEFAULT_COURSE_SETTINGS, DEFAULT_LUA_COURSE_META } from "./defaults"
 import {
+  coursesOf,
   readMentorPrompt,
   scanProject,
   writeGeneratedCourse,
@@ -90,6 +91,7 @@ describe("scanProject", () => {
     expect(snapshot.courses).toEqual([])
     expect(snapshot.chapters).toEqual([])
     expect(snapshot.lessons).toEqual({})
+    expect(coursesOf(snapshot)).toEqual([])
   })
 
   it("loads a legacy course folder with a course.json and content", () => {

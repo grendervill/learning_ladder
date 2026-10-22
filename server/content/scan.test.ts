@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { resolve } from "node:path"
+import { join, resolve } from "node:path"
 import { scanCourse } from "./scan"
 import { validateQuiz, type Quiz } from "./quiz"
 
@@ -68,7 +68,7 @@ describe("scanCourse", () => {
   })
 
   it("ignores root files that are not lessons", () => {
-    const course = scanCourse(projectRoot)
+    const course = scanCourse(join(projectRoot, "courses", "lua"), "lua")
     expect(JSON.stringify(course)).not.toContain("Без названия")
   })
 })

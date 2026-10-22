@@ -407,7 +407,7 @@ export function writeMentorPrompt(root: string, courseId: string, body: string):
 }
 
 export function coursesOf(snapshot: CourseSnapshot): CourseMeta[] {
-  return snapshot.courses && snapshot.courses.length ? snapshot.courses : [DEFAULT_LUA_COURSE_META]
+  return snapshot.courses !== undefined ? snapshot.courses : [DEFAULT_LUA_COURSE_META]
 }
 
 export function courseIdOf(value: { courseId?: string }): string {

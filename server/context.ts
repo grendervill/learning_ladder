@@ -2,8 +2,9 @@ import { resolve } from "node:path"
 import type { DatabaseSync } from "./db"
 import { getDb } from "./db"
 import { seedFromProgressIfEmpty } from "./db/seed"
-import { scanCourse } from "./content/scan"
+import { scanProject } from "./content/courses"
 import type { CourseSnapshot } from "./content/types"
+import { ensureProjectLayout, migrateLegacyLua } from "./project"
 
 export interface AppContext {
   db: DatabaseSync
@@ -24,14 +25,17 @@ export function buildContext(
 }
 
 export function defaultContext(): AppContext {
+  const root = process.cwd()
+  ensureProjectLayout(root)
+  migrateLegacyLua(root)
   const db = getDb()
-  let course = scanCourse(process.cwd())
-  const base = buildContext(db, course, undefined, process.cwd())
+  let course = scanProject(root)
+  const base = buildContext(db, course, resolve(root, "PROGRESS.md"), root)
   return {
     ...base,
     getCourse: () => course,
     refreshCourse: () => {
-      course = scanCourse(process.cwd())
+      course = scanProject(root)
       return course
     },
   }

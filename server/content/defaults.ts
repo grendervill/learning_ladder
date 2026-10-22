@@ -1,4 +1,4 @@
-import type { CourseMeta, CourseSettings, CourseTheme, CourseIcon } from "./types"
+import type { CourseMode, CourseMeta, CourseSettings, CourseTheme, CourseIcon, RuntimeKind } from "./types"
 
 export const COURSE_THEMES: CourseTheme[] = ["forest", "amber", "ocean", "plum", "clay"]
 export const COURSE_ICONS: CourseIcon[] = [
@@ -10,6 +10,16 @@ export const COURSE_ICONS: CourseIcon[] = [
   "scale",
   "palette",
   "heart",
+]
+export const COURSE_MODES: CourseMode[] = ["general", "math", "programming"]
+export const RUNTIME_KINDS: RuntimeKind[] = [
+  "none",
+  "lua",
+  "c",
+  "cpp",
+  "python",
+  "javascript",
+  "custom",
 ]
 
 export const DEFAULT_COURSE_SETTINGS: CourseSettings = {

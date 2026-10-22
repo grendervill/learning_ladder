@@ -6,6 +6,8 @@ import type { CourseSnapshot } from "./content/types"
 import { buildContext, defaultContext, type AppContext } from "./context"
 import { createCourseRouter } from "./routes/course"
 import { createCoursesRouter } from "./routes/courses"
+import { createProjectRouter } from "./routes/project"
+import type { ProjectManager } from "./project-controller"
 import { createProgressRouter } from "./routes/progress"
 import { createQuizRouter } from "./routes/quiz"
 import { createTaskFilesRouter } from "./routes/task-files"
@@ -25,6 +27,9 @@ export interface AppOptions {
   course?: CourseSnapshot
   progressPath?: string
   root?: string
+  staticRoot?: string
+  getContext?: () => AppContext
+  project?: ProjectManager
   mentor?: MentorService
   context?: AppContext
 }
@@ -34,7 +39,7 @@ export function createApp(options: AppOptions = {}): Express {
   app.use(express.json({ limit: "2mb" }))
 
   let context: AppContext | null = options.context ?? null
-  const getContext = () => {
+  const getContext = options.getContext ?? (() => {
     if (!context) {
       context =
         options.db && options.course
@@ -42,7 +47,7 @@ export function createApp(options: AppOptions = {}): Express {
           : defaultContext()
     }
     return context
-  }
+  })
 
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok" })
@@ -50,6 +55,7 @@ export function createApp(options: AppOptions = {}): Express {
 
   app.use("/api", createCourseRouter(getContext))
   app.use("/api", createCoursesRouter(getContext))
+  app.use("/api", createProjectRouter(getContext, options.project))
   app.use("/api", createQuizRouter(getContext))
   app.use("/api", createTaskFilesRouter(getContext))
   app.use("/api", createRunRouter(getContext))
@@ -63,7 +69,7 @@ export function createApp(options: AppOptions = {}): Express {
   app.use("/api", createProgressRouter(getContext))
   app.use("/api", createSettingsRouter(getContext))
 
-  const dist = join(process.cwd(), "dist")
+  const dist = join(options.staticRoot ?? process.cwd(), "dist")
   if (process.env.NODE_ENV === "production" && existsSync(dist)) {
     app.use(express.static(dist))
     app.use((req, res, next) => {
