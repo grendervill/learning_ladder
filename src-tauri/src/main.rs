@@ -2,42 +2,14 @@
 
 use std::io::{Read, Write};
 use std::net::TcpStream;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-use tauri::{Manager, RunEvent, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Manager, RunEvent, WebviewUrl, WebviewWindowBuilder};
 
 struct ServerProcess(Mutex<Option<Child>>);
-
-fn project_root() -> PathBuf {
-    if let Ok(root) = std::env::var("LEARNINGLUA_ROOT") {
-        let path = PathBuf::from(root);
-        if path.join("server").join("index.ts").exists() {
-            return path;
-        }
-    }
-    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    manifest
-        .parent()
-        .map(PathBuf::from)
-        .unwrap_or_else(|| manifest.clone())
-}
-
-fn find_executable(name: &str) -> Option<PathBuf> {
-    let mut candidates: Vec<PathBuf> = vec![
-        PathBuf::from("/opt/homebrew/bin").join(name),
-        PathBuf::from("/usr/local/bin").join(name),
-        PathBuf::from("/usr/bin").join(name),
-        PathBuf::from("/bin").join(name),
-    ];
-    if let Ok(home) = std::env::var("HOME") {
-        candidates.insert(0, PathBuf::from(&home).join(".local/bin").join(name));
-        candidates.insert(0, PathBuf::from(&home).join(".nvm/current/bin").join(name));
-    }
-    candidates.into_iter().find(|path| path.exists())
-}
 
 fn search_path() -> String {
     let mut parts: Vec<String> = vec![
@@ -55,7 +27,8 @@ fn search_path() -> String {
     if let Ok(existing) = std::env::var("PATH") {
         parts.push(existing);
     }
-    parts.join(":")
+    let separator = if cfg!(target_os = "windows") { ";" } else { ":" };
+    parts.join(separator)
 }
 
 fn server_healthy() -> bool {
@@ -74,21 +47,75 @@ fn server_healthy() -> bool {
     response.contains("\"status\":\"ok\"")
 }
 
-fn spawn_server(root: &Path) -> std::io::Result<Child> {
-    let node = find_executable("node").unwrap_or_else(|| PathBuf::from("node"));
-    let mut command = Command::new(node);
+fn default_project_root(app: &AppHandle) -> PathBuf {
+    let base = app
+        .path()
+        .document_dir()
+        .ok()
+        .or_else(|| app.path().home_dir().ok())
+        .or_else(|| std::env::current_dir().ok())
+        .unwrap_or_else(|| PathBuf::from("."));
+    base.join("Лестница обучения")
+}
+
+fn spawn_server(app: &AppHandle) -> std::io::Result<Child> {
+    let resources = app.path().resource_dir().map_err(|error| {
+        std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            format!("resource_dir: {error}"),
+        )
+    })?;
+    let node_name = if cfg!(target_os = "windows") {
+        "node.exe"
+    } else {
+        "node"
+    };
+    let node = resources.join("node").join(node_name);
+    let server = resources.join("server").join("server.cjs");
+    let web = resources.join("web");
+
+    for (label, path) in [
+        ("Node", node.as_path()),
+        ("server", server.as_path()),
+        ("web", web.as_path()),
+    ] {
+        if !path.exists() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                format!("{label} не найден: {}", path.display()),
+            ));
+        }
+    }
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if let Ok(metadata) = std::fs::metadata(&node) {
+            let mut permissions = metadata.permissions();
+            let mode = permissions.mode();
+            if mode & 0o111 == 0 {
+                permissions.set_mode(mode | 0o755);
+                let _ = std::fs::set_permissions(&node, permissions);
+            }
+        }
+    }
+
+    let project = default_project_root(app);
+    std::fs::create_dir_all(project.join("data"))?;
+
+    let mut command = Command::new(&node);
     command
-        .arg("--import")
-        .arg("tsx")
-        .arg("server/index.ts")
-        .current_dir(root)
+        .arg(&server)
+        .current_dir(&project)
         .env("NODE_ENV", "production")
         .env("PORT", "4173")
         .env("PATH", search_path())
         .env("LEARNINGLUA_DESKTOP", "1")
+        .env("LEARNINGLUA_STATIC_ROOT", &web)
+        .env("LEARNINGLUA_PROJECT_ROOT", &project)
         .stdin(Stdio::null());
 
-    let log_path = root.join("data").join("tauri-server.log");
+    let log_path = project.join("data").join("tauri-server.log");
     if let Some(log_dir) = log_path.parent() {
         let _ = std::fs::create_dir_all(log_dir);
     }
@@ -112,11 +139,11 @@ fn spawn_server(root: &Path) -> std::io::Result<Child> {
     command.spawn()
 }
 
-fn ensure_server(root: &Path, slot: &Mutex<Option<Child>>) -> bool {
+fn ensure_server(app: &AppHandle, slot: &Mutex<Option<Child>>) -> bool {
     if server_healthy() {
         return true;
     }
-    let child = match spawn_server(root) {
+    let child = match spawn_server(app) {
         Ok(child) => child,
         Err(error) => {
             eprintln!("Лестница обучения: не удалось запустить сервер: {error}");
@@ -134,14 +161,12 @@ fn ensure_server(root: &Path, slot: &Mutex<Option<Child>>) -> bool {
         std::thread::sleep(Duration::from_millis(300));
     }
     eprintln!(
-        "Лестница обучения: сервер не ответил за 45 секунд. Смотрите data/tauri-server.log"
+        "Лестница обучения: сервер не ответил за 45 секунд. Смотрите data/tauri-server.log в папке проекта"
     );
     false
 }
 
 fn main() {
-    let root = project_root();
-
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .manage(ServerProcess(Mutex::new(None)))
@@ -150,7 +175,7 @@ fn main() {
                 "http://localhost:5173".to_string()
             } else {
                 let state = app.state::<ServerProcess>();
-                ensure_server(&root, &state.0);
+                ensure_server(app.handle(), &state.0);
                 "http://127.0.0.1:4173".to_string()
             };
 

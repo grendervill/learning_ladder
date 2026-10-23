@@ -19,15 +19,16 @@ import { finalizeStaleSessions } from "./sessions/lifecycle"
 const DEFAULT_PORT = 4174
 
 export async function startServer(port = DEFAULT_PORT): Promise<Server> {
-  const codeRoot = process.cwd()
-  let projectRoot = readConfiguredProjectRoot(codeRoot)
+  const staticRoot = process.env.LEARNINGLUA_STATIC_ROOT ?? process.cwd()
+  const fallbackProjectRoot = process.env.LEARNINGLUA_PROJECT_ROOT ?? process.cwd()
+  let projectRoot = readConfiguredProjectRoot(fallbackProjectRoot)
   try {
     ensureProjectLayout(projectRoot)
   } catch (error) {
     console.error(`[project] не удалось открыть ${projectRoot}: ${String(error)}`)
-    projectRoot = codeRoot
-    writeConfiguredProjectRoot(codeRoot)
-    ensureProjectLayout(codeRoot)
+    projectRoot = fallbackProjectRoot
+    writeConfiguredProjectRoot(fallbackProjectRoot)
+    ensureProjectLayout(projectRoot)
   }
   if (resolve(projectRoot) !== resolve(process.cwd())) {
     process.chdir(projectRoot)
@@ -73,7 +74,7 @@ export async function startServer(port = DEFAULT_PORT): Promise<Server> {
     createApp({
       getContext: () => manager.getContext(),
       project: manager,
-      staticRoot: codeRoot,
+      staticRoot,
     }),
   )
   attachLspServer(server, () => manager.getContext())

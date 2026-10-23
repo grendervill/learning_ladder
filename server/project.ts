@@ -61,6 +61,13 @@ permissions:
 
 export function appConfigPath(): string {
   if (process.env.LEARNINGLUA_CONFIG) return resolve(process.env.LEARNINGLUA_CONFIG)
+  if (process.platform === "win32") {
+    return join(
+      process.env.APPDATA ?? join(homedir(), "AppData", "Roaming"),
+      "learning-ladder",
+      "config.json",
+    )
+  }
   if (process.platform === "darwin") {
     return join(homedir(), "Library", "Application Support", "learning-ladder", "config.json")
   }

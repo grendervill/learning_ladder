@@ -109,19 +109,38 @@ npm test           # тесты
 npm run test:e2e   # браузерные сценарии
 npm run build      # production-сборка
 npm run tauri:dev  # приложение в режиме разработки
-npm run tauri:build # собрать .app для macOS
+npm run tauri:build # собрать установщик под текущую ОС
 ```
 
-## 🖥️ Приложение для macOS
+## 🖥️ Настольное приложение
 
-Сайт можно запускать как отдельное приложение через иконку:
+`npm run tauri:build` собирает фронтенд, серверный бандл, веб-ресурсы и Node 26
+для текущей платформы, а затем — установщик:
 
-- `npm run tauri:build` собирает `src-tauri/target/release/bundle/macos/Лестница обучения.app`;
-- при запуске приложение само поднимает локальный сервер на `127.0.0.1:4173`
-  и открывает кабинет в своём окне;
-- если сервер уже запущен (например, через `./scripts/start.sh`), приложение
-  переиспользует его и не останавливает при закрытии;
-- для сборки нужны Rust (`cargo`) и Tauri CLI — он уже в devDependencies.
+- **macOS Apple Silicon** → `.app` и `.dmg`;
+- **Windows x64 / arm64** → NSIS и MSI;
+- **Linux x64 / arm64** → AppImage и `.deb`.
+
+Сервер и Node лежат внутри приложения, поэтому для запуска готовой сборки не
+нужны ни исходники, ни установленный Node. Собирать Windows/Linux-версии нужно
+на соответствующей ОС (или в CI с матрицей платформ); для Windows нужен
+WebView2, для Linux — `webkit2gtk-4.1`, `libappindicator` и обычные Tauri-зависимости.
+
+**Папка проекта по умолчанию** при первом запуске:
+
+- macOS/Linux: `~/Documents/Лестница обучения`;
+- Windows: `%USERPROFILE%\Documents\Лестница обучения`.
+
+Внутри — `courses/`, `data/` (база и `settings.json`), `prompts/`, `reports/` и
+`.opencode/agents/`. Папку можно сменить в «Настройках → Папка проекта»; старая
+папка остаётся на месте. Путь к выбранной папке хранится в конфиге приложения:
+`~/Library/Application Support/learning-ladder/config.json` на macOS,
+`%APPDATA%\learning-ladder\config.json` на Windows,
+`$XDG_CONFIG_HOME/learning-ladder/config.json` на Linux.
+
+OpenCode, языковые серверы и компиляторы остаются внешними: приложение
+показывает их состояние в проверках, а модели OpenCode берёт из локального
+OpenCode-аккаунта. Для прямых провайдеров нужен свой API-ключ.
 
 ## ⚙️ Настройки
 

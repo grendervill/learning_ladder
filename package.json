@@ -8,6 +8,7 @@
     "dev:server": "tsx watch server/index.ts",
     "dev:web": "vite",
     "build": "vite build",
+    "desktop:prepare": "node scripts/prepare-desktop.mjs",
     "start": "NODE_ENV=production node --import tsx server/index.ts",
     "test": "vitest run",
     "test:e2e": "playwright test",
