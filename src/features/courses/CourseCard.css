@@ -1,0 +1,238 @@
+.course-card {
+  --card-accent: #2f7d5f;
+  --card-glow: color-mix(in srgb, var(--card-accent) 72%, transparent);
+  --card-spot: color-mix(in srgb, var(--card-accent) 20%, transparent);
+  --mx: 50%;
+  --my: 50%;
+  --rx: 0deg;
+  --ry: 0deg;
+  position: relative;
+  display: flex;
+  min-height: 310px;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid color-mix(in srgb, var(--card-accent) 26%, var(--line));
+  border-radius: 18px;
+  background:
+    radial-gradient(120% 100% at 0% 0%, color-mix(in srgb, var(--card-accent) 13%, transparent), transparent 58%),
+    linear-gradient(145deg, color-mix(in srgb, var(--card-accent) 7%, var(--surface)), var(--surface));
+  color: var(--text);
+  text-decoration: none;
+  transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));
+  transition: transform 180ms cubic-bezier(.2, .7, .3, 1), border-color var(--transition), box-shadow var(--transition);
+  will-change: transform;
+}
+
+.course-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: radial-gradient(240px circle at var(--mx) var(--my), var(--card-glow), transparent 70%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 220ms ease;
+  pointer-events: none;
+}
+
+.course-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: radial-gradient(280px circle at var(--mx) var(--my), var(--card-spot), transparent 72%);
+  opacity: 0;
+  transition: opacity 220ms ease;
+  pointer-events: none;
+}
+
+.course-card:hover {
+  border-color: color-mix(in srgb, var(--card-accent) 65%, var(--line));
+  box-shadow:
+    0 22px 50px color-mix(in srgb, var(--card-accent) 14%, transparent),
+    0 2px 0 color-mix(in srgb, var(--card-accent) 20%, transparent) inset;
+  transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry)) translateY(-4px);
+}
+
+.course-card:hover::before,
+.course-card:hover::after {
+  opacity: 1;
+}
+
+.course-card__body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 26px 28px 24px;
+}
+
+.course-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 30px;
+}
+
+.course-card__icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: 1px solid color-mix(in srgb, var(--card-accent) 38%, transparent);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--card-accent) 13%, transparent);
+  color: var(--card-accent);
+}
+
+.course-card__mode {
+  color: color-mix(in srgb, var(--card-accent) 80%, var(--muted));
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: .03em;
+}
+
+.course-card h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(26px, 2.3vw, 34px);
+  font-weight: 420;
+  line-height: 1.08;
+  letter-spacing: -.035em;
+}
+
+.course-card__description {
+  display: -webkit-box;
+  max-width: 44ch;
+  margin: 10px 0 22px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.course-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: auto;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+}
+
+.course-card__percent {
+  margin-left: auto;
+  color: var(--card-accent);
+}
+
+.course-card__bar {
+  height: 3px;
+  margin: 9px 0 17px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card-accent) 12%, var(--line));
+}
+
+.course-card__bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--card-accent);
+  transition: width 500ms cubic-bezier(.2, .7, .3, 1);
+}
+
+.course-card__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--card-accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.course-card--amber {
+  --card-accent: #b07a3f;
+}
+
+.course-card--ocean {
+  --card-accent: #4a7f9e;
+}
+
+.course-card--plum {
+  --card-accent: #8a658f;
+}
+
+.course-card--clay {
+  --card-accent: #b06a52;
+}
+
+.course-card--create {
+  display: grid;
+  place-items: center;
+  border-style: dashed;
+  border-color: var(--line-strong);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  text-align: center;
+  cursor: pointer;
+}
+
+.course-card--create::before,
+.course-card--create::after {
+  display: none;
+}
+
+.course-card--create:hover {
+  border-color: var(--accent);
+  box-shadow: none;
+  color: var(--text);
+  transform: translateY(-2px);
+}
+
+.course-card--create .course-card__body {
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px;
+  text-align: center;
+}
+
+.course-card--create .course-card__icon {
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  background: var(--accent-faint);
+  color: var(--accent);
+}
+
+.course-card--create h2 {
+  font-size: 24px;
+}
+
+.course-card--create p {
+  max-width: 30ch;
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .course-card,
+  .course-card:hover {
+    transform: none;
+  }
+
+  .course-card::before,
+  .course-card::after {
+    display: none;
+  }
+}

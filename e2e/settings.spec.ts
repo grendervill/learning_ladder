@@ -16,11 +16,15 @@ test("shows settings checks and tabs", async ({ page }) => {
   await page.route("**/api/settings/checks", (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(checks) }),
   )
-  await page.route("**/api/settings/mentor-prompt", (route) =>
+  await page.route("**/api/constructor-prompt", (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ prompt: "Ты наставник по Lua. Не давай готовый код.", path: "/tmp/lua-mentor.md" }),
+      body: JSON.stringify({
+        prompt: "Ты методист. Собирай курс по схеме.",
+        defaultPrompt: "Стандартный промпт.",
+        path: "/tmp/constructor.md",
+      }),
     }),
   )
 
@@ -31,11 +35,26 @@ test("shows settings checks and tabs", async ({ page }) => {
   await expect(page.getByText("1 с замечаниями")).toBeVisible()
   await expect(page.locator(".check-row")).toHaveCount(4)
 
-  await page.getByRole("tab", { name: "Наставник" }).click()
-  await expect(page.locator(".mentor-textarea")).toHaveValue(/Не давай готовый код/)
+  await page.getByRole("tab", { name: "Конструктор" }).click()
+  await expect(page.locator(".mentor-textarea")).toHaveValue(/Ты методист/)
 
   await page.getByRole("tab", { name: "Нейросеть" }).click()
   await expect(page.getByRole("radiogroup", { name: "Провайдер нейросети" })).toBeVisible()
   await expect(page.locator(".provider-card")).toHaveCount(6)
   await expect(page.locator(".settings-input").first()).toHaveValue(/deepseek/)
+
+  await page.getByRole("tab", { name: "Папка проекта" }).click()
+  await expect(page.getByRole("heading", { name: "Папка проекта" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Сменить папку проекта" })).toBeVisible()
+})
+
+test("shows per-course settings and mentor prompt", async ({ page }) => {
+  await page.goto("/courses/lua/settings")
+  await dismissReport(page)
+  await expect(page.getByRole("heading", { name: "Настройки курса" })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Карточка" })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Наставник" })).toBeVisible()
+  await expect(page.getByLabel("Промпт наставника курса")).toHaveValue(/наставник/i)
+  await expect(page.getByRole("heading", { name: "Практика" })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Проверки курса" })).toBeVisible()
 })

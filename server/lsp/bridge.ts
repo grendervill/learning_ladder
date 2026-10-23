@@ -57,7 +57,7 @@ export function createLspBridge(ws: WebSocket, options: BridgeOptions = {}): Chi
 
   child.stderr.on("data", (chunk: Buffer) => {
     const text = chunk.toString().trim()
-    if (text) console.error(`[lua-language-server] ${text}`)
+    if (text) console.error(`[lsp:${command}] ${text}`)
   })
 
   child.on("error", (error) => {

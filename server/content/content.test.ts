@@ -1,3 +1,4 @@
+import { join } from "node:path"
 import { describe, expect, it } from "vitest"
 import { scanCourse } from "./scan"
 
@@ -10,7 +11,7 @@ function countTypes(quiz: NonNullable<ReturnType<typeof scanCourse>["chapters"][
 
 describe("project content", () => {
   it("has a complete six-chapter course without content errors", () => {
-    const course = scanCourse(process.cwd())
+    const course = scanCourse(join(process.cwd(), "courses", "lua"), "lua")
     expect(course.errors).toEqual([])
     expect(course.chapters).toHaveLength(6)
     expect(Object.keys(course.lessons)).toHaveLength(17)

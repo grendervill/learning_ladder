@@ -52,7 +52,7 @@ function readMetadata(path: string, errors: ContentError[], lessonId: string, ta
   if (!existsSync(path)) return {}
   try {
     const value = JSON.parse(readText(path)) as TaskMetadata
-    if (value.kind && !["code", "terminal", "love", "project"].includes(value.kind)) {
+    if (value.kind && !["code", "terminal", "love", "project", "steps"].includes(value.kind)) {
       addError(errors, lessonId, "task_invalid_kind", `Задание ${taskId}: неизвестный kind`, path)
       return { ...value, kind: "code" }
     }

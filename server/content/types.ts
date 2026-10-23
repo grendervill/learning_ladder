@@ -1,5 +1,34 @@
+import type {
+  CourseIcon,
+  CourseMode,
+  CourseSettings,
+  CourseTheme,
+  RuntimeKind,
+} from "../../shared/runtimes"
+
+export type {
+  CourseIcon,
+  CourseMode,
+  CourseSettings,
+  CourseTheme,
+  RuntimeKind,
+} from "../../shared/runtimes"
+
 export type QuestionType = "single" | "text"
-export type TaskKind = "code" | "terminal" | "love" | "project"
+export type TaskKind = "code" | "terminal" | "love" | "project" | "steps"
+
+export interface CourseMeta {
+  id: string
+  title: string
+  description: string
+  theme: CourseTheme
+  icon: CourseIcon
+  mode: CourseMode
+  settings: CourseSettings
+  builtIn: boolean
+  createdAt: string
+  format?: "legacy" | "generated"
+}
 
 export interface SingleQuestion {
   id: string
@@ -41,6 +70,7 @@ export interface TaskContent {
   args: string[]
   stdin: string
   timeoutMs: number
+  criteria?: string[]
 }
 
 export interface ContentError {
@@ -48,11 +78,13 @@ export interface ContentError {
   message: string
   lessonId?: string
   chapterId?: string
+  courseId?: string
   path?: string
 }
 
 export interface LessonContent {
   id: string
+  courseId?: string
   title: string
   theoryMarkdown: string
   practiceIntro: string
@@ -63,6 +95,7 @@ export interface LessonContent {
 
 export interface Chapter {
   id: string
+  courseId?: string
   title: string
   description: string
   lessonIds: string[]
@@ -72,6 +105,7 @@ export interface Chapter {
 
 export interface CourseSnapshot {
   version: string
+  courses?: CourseMeta[]
   chapters: Chapter[]
   lessons: Record<string, LessonContent>
   unassigned: string[]

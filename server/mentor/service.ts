@@ -88,28 +88,59 @@ function formatRun(run: MentorReviewRequest["tasks"][number]["lastRun"]): string
   return `exit=${run.exitCode}${run.timedOut ? " (timeout)" : ""}${run.syntaxError ? " (syntax error)" : ""}\nstdout:\n${run.stdout || "(пусто)"}\nstderr:\n${run.stderr || "(пусто)"}`
 }
 
+function formatStudentWork(task: MentorReviewRequest["tasks"][number]): string {
+  if (task.kind === "steps") {
+    const solution = task.files.find((file) => file.name === "solution.json")?.content
+    if (solution) {
+      try {
+        const parsed = JSON.parse(solution)
+        const steps = Array.isArray(parsed.steps) ? parsed.steps : []
+        const lines = steps.map((step: any, index: number) => {
+          const formula = String(step?.formula ?? "").trim() || "(пусто)"
+          const explanation = String(step?.explanation ?? "").trim() || "(пусто)"
+          return `Шаг ${index + 1}:\n  формула: ${formula}\n  пояснение: ${explanation}`
+        })
+        return `${lines.join("\n") || "(шагов нет)"}\nФинальный ответ: ${String(parsed.answer ?? "").trim() || "(пусто)"}`
+      } catch {
+        // Fall back to the raw file below.
+      }
+    }
+  }
+  return (
+    task.files
+      .map((file) => `--- ${file.name} ---\n${file.content}`)
+      .join("\n") || "(файлов нет)"
+  )
+}
+
 function buildReviewPrompt(request: MentorReviewRequest): string {
   const tasks = request.tasks
     .map((task) => {
-      const files = task.files
-        .map((file) => `--- ${file.name} ---\n${file.content}`)
-        .join("\n")
       const terminal = (task.terminalHistory ?? [])
         .map(
           (entry) =>
             `$ ${entry.command}\n${entry.stdout}${entry.stderr ? `\n[stderr] ${entry.stderr}` : ""}\n(exit ${entry.exitCode})`,
         )
         .join("\n\n")
+      const label = task.kind === "steps" ? "Решение по шагам (LaTeX и пояснения):" : "Код ученика:"
+      const criteria = task.criteria?.length
+        ? `\nКритерии: ${JSON.stringify(task.criteria)}`
+        : ""
       return `### Задание ${task.taskId} · ${task.title} (${task.kind})
-Описание: ${task.prompt}
-Код ученика:
-${files || "(файлов нет)"}
+Описание: ${task.prompt}${criteria}
+${label}
+${formatStudentWork(task)}
 Последний запуск:
 ${formatRun(task.lastRun)}
 История терминала:
 ${terminal || "(команд не было)"}`
     })
     .join("\n\n")
+
+  const practiceNote =
+    request.tasks.length === 0 && request.quiz.length > 0
+      ? "\nПрактика: отдельного задания нет — квиз ниже является практикой. Проверь понимание и письменные ответы, а не только совпадение с ключом.\n"
+      : ""
 
   const quiz = request.quiz
     .map((question) => {
@@ -141,13 +172,14 @@ ${terminal || "(команд не было)"}`
 
 Требования к проверке:
 - оцени уровень понимания и самостоятельность, а не только «работает/не работает»;
+- для математики проверяй каждый шаг, а не только финальный ответ;
 - не давай готовый код и не вставляй полные реализации;
 - в tasks верни feedback по каждому заданию;
 - в quiz верни feedback по каждому вопросу;
 - если ответ на вопрос пустой или бессмысленный — correct=false;
 - grade 2–5, verdict "pass" только при grade >= 4;
 - верни только JSON без Markdown-обёртки.
-
+${practiceNote}
 Предыдущие попытки:
 ${previous || "нет"}
 
@@ -187,7 +219,8 @@ ${history || "(начало диалога)"}
 function buildSummaryPrompt(stats: SessionStats): string {
   return `Составь итог учебного занятия по статистике ниже. Пиши по-русски, тепло, но честно.
 Обязательные разделы: «Общая оценка», «Что прошёл», «Процент от задуманного», «Сильные стороны», «Слабые стороны», «Напутствие», «Рекомендации по текущей главе», «Рекомендации на следующую главу».
-Не выдумывай оценки и факты, которых нет в статистике. Не давай готовый код.
+Если в занятии несколько курсов, внутри разделов «Что прошёл», «Сильные стороны», «Слабые стороны» и оба раздела рекомендаций сделай подразделы по каждому курсу. Не смешивай курсы и не выдумывай оценки и факты, которых нет в статистике.
+Не давай готовый код.
 
 Статистика:
 ${JSON.stringify(stats, null, 2)}`
@@ -244,14 +277,26 @@ function mockReview(request: MentorReviewRequest): MentorReviewResult {
 }
 
 function mockSummary(stats: SessionStats): string {
+  const sections = stats.courses
+    .map(
+      (course) =>
+        `### ${course.title}\n${course.lessons
+          .filter((lesson) => lesson.status !== "locked")
+          .map((lesson) => `- ${lesson.title}: ${lesson.status}`)
+          .join("\n") || "Пока только чтение материалов."}`,
+    )
+    .join("\n\n")
+  const percents = stats.courses
+    .map((course) => `- ${course.title}: ${course.percent}% (${course.passed} из ${course.total})`)
+    .join("\n")
   return `## Общая оценка
-Хорошее занятие. Ты продвинулся по текущей главе и сохранил рабочий темп.
+Хорошее занятие. Ты продвинулся по курсам и сохранил рабочий темп.
 
 ## Что прошёл
-${stats.lessons.filter((lesson) => lesson.status !== "locked").map((lesson) => `- ${lesson.title}: ${lesson.status}`).join("\n") || "Пока только чтение материалов."}
+${sections || "Пока только чтение материалов."}
 
 ## Процент от задуманного
-${stats.percent}% обязательных шагов текущей главы.
+${percents || `${stats.percent}% программы.`}
 
 ## Сильные стороны
 - Ты сам запускаешь код и проверяешь результат.
@@ -264,10 +309,10 @@ ${stats.percent}% обязательных шагов текущей главы.
 Не спеши сдавать. Сначала сформулируй, что именно должен делать код.
 
 ## Рекомендации по текущей главе
-Перечитай раздел про local и проверь типы в REPL.
+${stats.courses.map((course) => `- ${course.title}: перечитай текущую главу и проверь ключевые примеры.`).join("\n") || "Перечитай текущую главу."}
 
 ## Рекомендации на следующую главу
-Повтори таблицы и функции перед следующим шагом.`
+${stats.courses.map((course) => `- ${course.title}: повтори пройденное перед новым материалом.`).join("\n") || "Повтори пройденное."}`
 }
 
 function mockClassification(snapshot: CourseSnapshot, unassigned: string[]): MentorClassification {
@@ -300,7 +345,7 @@ export interface GenerateQuizInput {
   tasks: Array<{ title: string; kind: string }>
 }
 
-export type MentorGenerate = (sessionId: string, prompt: string) => Promise<string>
+export type MentorGenerate = (sessionId: string, prompt: string, system?: string) => Promise<string>
 export type MentorCreateSession = () => Promise<string>
 export type MentorDeleteSession = (sessionId: string) => Promise<void>
 
@@ -339,13 +384,14 @@ export function createMentorService(options: MentorServiceOptions = {}): MentorS
     async reviewLesson(sessionId, request) {
       if (mock) return mockReview(request)
       const prompt = buildReviewPrompt(request)
-      let raw = await generate(sessionId, prompt)
+      let raw = await generate(sessionId, prompt, request.mentorPrompt)
       let result = tryParseReview(raw)
       const needsRetry = !result || containsReadyCode(raw)
       if (needsRetry) {
         raw = await generate(
           sessionId,
           `${prompt}\n\nПредыдущий ответ не прошёл проверку. Верни ТОЛЬКО валидный JSON по схеме, без Markdown-обёртки и без готового кода.`,
+          request.mentorPrompt,
         )
         result = tryParseReview(raw)
       }
@@ -355,11 +401,12 @@ export function createMentorService(options: MentorServiceOptions = {}): MentorS
     async askMentor(sessionId, context, question) {
       if (mock) return "Подумай, что именно делает эта строка. Что вернёт type(42)? Попробуй проверить в REPL."
       const prompt = buildAskPrompt(context, question)
-      let answer = await generate(sessionId, prompt)
+      let answer = await generate(sessionId, prompt, context.mentorPrompt)
       if (containsReadyCode(answer)) {
         answer = await generate(
           sessionId,
           `${prompt}\n\nУбери фенсед-блоки с готовым кодом. Оставь только подсказку и вопрос.`,
+          context.mentorPrompt,
         )
       }
       return stripReadyCode(answer)

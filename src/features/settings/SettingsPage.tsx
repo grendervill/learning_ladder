@@ -1,15 +1,19 @@
 import { useRef } from "react"
 import { useSearchParams } from "react-router-dom"
-import { Cpu, GraduationCap, Settings2, Stethoscope } from "lucide-react"
+import { Cpu, FolderOpen, Plus, Settings2, Stethoscope, WandSparkles } from "lucide-react"
 import { ChecksTab } from "./ChecksTab"
-import { MentorTab } from "./MentorTab"
+import { ConstructorTab } from "./ConstructorTab"
+import { CreateTab } from "./CreateTab"
 import { NetworkTab } from "./NetworkTab"
+import { ProjectTab } from "./ProjectTab"
 import "./SettingsPage.css"
 
 const TABS = [
   { id: "checks", label: "Проверки", icon: Stethoscope },
-  { id: "mentor", label: "Наставник", icon: GraduationCap },
   { id: "network", label: "Нейросеть", icon: Cpu },
+  { id: "create", label: "Создать курс", icon: Plus },
+  { id: "constructor", label: "Конструктор", icon: WandSparkles },
+  { id: "project", label: "Папка проекта", icon: FolderOpen },
 ] as const
 
 type TabId = (typeof TABS)[number]["id"]
@@ -21,7 +25,7 @@ export function SettingsPage() {
   const tab: TabId = TABS.some((entry) => entry.id === requested) ? (requested as TabId) : "checks"
 
   function select(id: TabId) {
-    setParams(id === "checks" ? {} : { tab: id }, { replace: true })
+    setParams({ tab: id }, { replace: true })
     requestAnimationFrame(() => {
       const tabs = tabsRef.current
       if (!tabs) return
@@ -42,7 +46,10 @@ export function SettingsPage() {
           <Settings2 size={13} aria-hidden /> кабинет
         </span>
         <h1>Настройки</h1>
-        <p>Проверки инструментов, промпт наставника и подключение нейросети. Всё хранится локально.</p>
+        <p>
+          Проверки инструментов, нейросеть, конструктор курсов и папка проекта.
+          Наставник и практика настраиваются внутри каждого курса.
+        </p>
       </header>
 
       <div className="settings-tabs" role="tablist" aria-label="Разделы настроек" ref={tabsRef}>
@@ -84,8 +91,10 @@ export function SettingsPage() {
         key={tab}
       >
         {tab === "checks" && <ChecksTab />}
-        {tab === "mentor" && <MentorTab />}
         {tab === "network" && <NetworkTab />}
+        {tab === "create" && <CreateTab />}
+        {tab === "constructor" && <ConstructorTab />}
+        {tab === "project" && <ProjectTab />}
       </section>
     </div>
   )

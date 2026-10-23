@@ -2,10 +2,12 @@ import { existsSync, readdirSync, rmSync } from "node:fs"
 import { resolve } from "node:path"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { buildContext } from "../context"
+import { DEFAULT_COURSE_META } from "../content/defaults"
 import { migrate, openDatabase } from "../db"
 import type { MentorService } from "../mentor/service"
 import type { CourseSnapshot, LessonContent } from "../content/types"
 import {
+  buildSessionStats,
   finalizeSession,
   finalizeStaleSessions,
   getLastReport,
@@ -50,6 +52,52 @@ function context() {
   migrate(db)
   db.prepare("insert into lesson_progress (lesson_id, status, best_grade, attempts) values ('01-hello-lua', 'passed', 5, 1)").run()
   return buildContext(db, snapshot, resolve(process.cwd(), "does-not-exist.md"))
+}
+
+const multiSnapshot: CourseSnapshot = {
+  version: "test",
+  courses: [
+    { ...DEFAULT_COURSE_META, id: "lua", title: "Lua", mode: "programming", builtIn: true },
+    { ...DEFAULT_COURSE_META, id: "econ", title: "Экономика", mode: "general", builtIn: false },
+  ],
+  chapters: [
+    {
+      id: "lua-c1",
+      courseId: "lua",
+      title: "Основы Lua",
+      description: "",
+      lessonIds: ["lua-1"],
+      quiz: null,
+      errors: [],
+    },
+    {
+      id: "econ-c1",
+      courseId: "econ",
+      title: "Деньги",
+      description: "",
+      lessonIds: ["econ-1"],
+      quiz: null,
+      errors: [],
+    },
+  ],
+  lessons: {
+    "lua-1": { ...lesson("lua-1"), courseId: "lua", title: "Первый запуск" },
+    "econ-1": { ...lesson("econ-1"), courseId: "econ", title: "Бюджет" },
+  },
+  unassigned: [],
+  errors: [],
+}
+
+function multiContext() {
+  const db = openDatabase(":memory:")
+  migrate(db)
+  db.prepare(
+    "insert into lesson_progress (lesson_id, status, best_grade, attempts) values ('lua-1', 'passed', 5, 1)",
+  ).run()
+  db.prepare(
+    "insert into lesson_progress (lesson_id, status, best_grade, attempts) values ('econ-1', 'passed', 4, 1)",
+  ).run()
+  return buildContext(db, multiSnapshot, resolve(process.cwd(), "does-not-exist.md"))
 }
 
 function mentor(overrides: Partial<MentorService> = {}): MentorService {
@@ -132,6 +180,17 @@ describe("study sessions", () => {
     const file = reportFiles.find((name) => name.includes(session.id.slice(-8)))
     expect(file).toBeTruthy()
     if (file) files.push(resolve(process.cwd(), "reports", file))
+  })
+
+  it("groups session stats by course", () => {
+    const ctx = multiContext()
+    const session = startSession(ctx)
+    const stats = buildSessionStats(ctx, session)
+    expect(stats.courses.map((course) => course.title)).toEqual(["Lua", "Экономика"])
+    expect(stats.courses[0]).toMatchObject({ passed: 1, total: 1, percent: 100 })
+    expect(stats.courses[1].lessons[0].title).toBe("Бюджет")
+    expect(stats.lessons).toHaveLength(2)
+    expect(stats.percent).toBe(100)
   })
 
   it("falls back without ai when the mentor is down", async () => {

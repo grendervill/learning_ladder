@@ -1,8 +1,8 @@
 [package]
 name = "learninglua"
 version = "0.1.0"
-description = "Локальный учебный кабинет по Lua"
-authors = ["LearningLua"]
+description = "Локальный учебный кабинет «Лестница обучения»"
+authors = ["Лестница обучения"]
 edition = "2021"
 
 [build-dependencies]
@@ -10,6 +10,7 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
 
 [profile.release]
 panic = "abort"

@@ -1,0 +1,19 @@
+{
+  "format": "legacy",
+  "id": "lua",
+  "title": "Lua",
+  "description": "Язык программирования Lua: от первого запуска и типов данных до метатаблиц, корутин и финального проекта.",
+  "theme": "forest",
+  "icon": "code",
+  "mode": "programming",
+  "settings": {
+    "runtime": "lua",
+    "runCommand": "lua {file}",
+    "lspCommand": "lua-language-server",
+    "lspArgs": [],
+    "fileExtension": ".lua",
+    "entry": "main.lua"
+  },
+  "builtIn": true,
+  "createdAt": "2026-10-22T00:00:00.000Z"
+}

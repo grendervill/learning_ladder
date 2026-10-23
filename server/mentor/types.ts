@@ -26,6 +26,7 @@ export interface MentorTaskInput {
   files: MentorFile[]
   lastRun?: MentorRun | null
   terminalHistory?: MentorTerminalEntry[]
+  criteria?: string[]
 }
 
 export interface MentorQuizQuestion {
@@ -49,6 +50,7 @@ export interface MentorReviewRequest {
   tasks: MentorTaskInput[]
   quiz: MentorQuizQuestion[]
   previousAttempts?: Array<{ grade: number; summary: string; submittedAt: string }>
+  mentorPrompt?: string
 }
 
 export interface MentorTaskFeedback {
@@ -82,6 +84,7 @@ export interface MentorContext {
   code?: MentorFile[]
   lastRun?: MentorRun | null
   history?: Array<{ role: "user" | "assistant"; content: string }>
+  mentorPrompt?: string
 }
 
 export interface MentorClassification {
@@ -95,9 +98,20 @@ export interface MentorClassification {
   reason: string
 }
 
+export interface SessionCourseStats {
+  id: string
+  title: string
+  percent: number
+  passed: number
+  total: number
+  chapters: Array<{ title: string; passed: number; total: number }>
+  lessons: Array<{ title: string; grade: number | null; status: string }>
+}
+
 export interface SessionStats {
   startedAt: string
   endedAt: string
+  courses: SessionCourseStats[]
   chapters: Array<{ title: string; passed: number; total: number }>
   lessons: Array<{ title: string; grade: number | null; status: string }>
   percent: number

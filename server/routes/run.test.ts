@@ -48,6 +48,12 @@ const snapshot: CourseSnapshot = {
     "02-variables-types": lesson("02-variables-types", [
       task(),
       task({ id: "love", kind: "love", entry: "main.lua" }),
+      task({
+        id: "steps",
+        kind: "steps",
+        entry: "solution.json",
+        files: [{ name: "solution.json", content: '{"steps":[],"answer":""}' }],
+      }),
     ]),
     "03-control-flow": lesson("03-control-flow", [task({ id: "locked" })]),
   },
@@ -93,5 +99,11 @@ describe("run api", () => {
     const res = await request(app()).post("/api/tasks/02-variables-types/love/run").send({})
     expect(res.status).toBe(400)
     expect(res.body.error).toBe("love_preview_is_client_side")
+  })
+
+  it("does not run step-by-step math tasks", async () => {
+    const res = await request(app()).post("/api/tasks/02-variables-types/steps/run").send({})
+    expect(res.status).toBe(400)
+    expect(res.body.error).toBe("steps_task_is_not_runnable")
   })
 })

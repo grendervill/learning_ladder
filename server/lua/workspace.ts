@@ -2,7 +2,9 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve, sep } from "node:path"
 import type { TaskFile } from "../content/types"
 
-export const DEFAULT_WORKSPACE_ROOT = resolve(process.cwd(), "data", "workspaces")
+export function defaultWorkspaceRoot(): string {
+  return resolve(process.cwd(), "data", "workspaces")
+}
 
 function safeSegment(value: string): string {
   return value.replace(/[^a-zA-Z0-9._-]/g, "_")
@@ -11,7 +13,7 @@ function safeSegment(value: string): string {
 export function workspacePath(
   lessonId: string,
   taskId: string,
-  root = DEFAULT_WORKSPACE_ROOT,
+  root = defaultWorkspaceRoot(),
 ): string {
   const dir = join(root, safeSegment(lessonId), safeSegment(taskId))
   mkdirSync(dir, { recursive: true })
@@ -33,7 +35,7 @@ export function writeTaskFiles(
   lessonId: string,
   taskId: string,
   files: TaskFile[],
-  root = DEFAULT_WORKSPACE_ROOT,
+  root = defaultWorkspaceRoot(),
 ): string {
   const dir = workspacePath(lessonId, taskId, root)
   for (const file of files) {
@@ -48,7 +50,7 @@ export async function resetTaskWorkspace(
   lessonId: string,
   taskId: string,
   starterFiles: TaskFile[],
-  root = DEFAULT_WORKSPACE_ROOT,
+  root = defaultWorkspaceRoot(),
 ): Promise<string> {
   const dir = workspacePath(lessonId, taskId, root)
   rmSync(dir, { recursive: true, force: true })

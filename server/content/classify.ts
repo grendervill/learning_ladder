@@ -4,13 +4,17 @@ import type { AppContext } from "../context"
 import type { MentorService } from "../mentor/service"
 import type { MentorClassification } from "../mentor/types"
 import { acquireMentorSession } from "../sessions/lifecycle"
-import { scanCourse } from "./scan"
+import { scanProject } from "./courses"
 import type { CourseSnapshot, Quiz } from "./types"
 
 let classifying = false
 
+function luaCourseRoot(root: string): string {
+  return join(root, "courses", "lua")
+}
+
 function readChapters(root: string): { chapters: any[] } {
-  const path = join(root, "course", "chapters.json")
+  const path = join(luaCourseRoot(root), "course", "chapters.json")
   return JSON.parse(readFileSync(path, "utf8"))
 }
 
@@ -61,8 +65,9 @@ async function generateMissingQuizzes(
   sessionId: string,
 ) {
   if (!mentor.generateQuiz) return
+  const courseRoot = luaCourseRoot(root)
   for (const chapter of classification.newChapters) {
-    const path = join(root, "course", "chapter-quizzes", `${chapter.id}.json`)
+    const path = join(courseRoot, "course", "chapter-quizzes", `${chapter.id}.json`)
     if (existsSync(path)) continue
     try {
       const quiz = await mentor.generateQuiz(sessionId, {
@@ -79,7 +84,7 @@ async function generateMissingQuizzes(
 
   const assignedFolders = new Set(classification.assignments.map((item) => item.folder))
   for (const folder of assignedFolders) {
-    const path = join(root, "lessons", folder, "quiz.json")
+    const path = join(courseRoot, "lessons", folder, "quiz.json")
     if (existsSync(path)) continue
     const lesson = snapshot.lessons[folder]
     if (!lesson) continue
@@ -137,11 +142,11 @@ export async function classifyAndApply(
         })
       }
     }
-    writeJson(join(root, "course", "chapters.json"), chaptersFile)
+    writeJson(join(luaCourseRoot(root), "course", "chapters.json"), chaptersFile)
 
     await generateMissingQuizzes(root, snapshot, classification, mentor, acquired.sessionId)
 
-    const updated = context.refreshCourse?.() ?? scanCourse(root)
+    const updated = context.refreshCourse?.() ?? scanProject(root)
     return { applied: true, snapshot: updated }
   } finally {
     classifying = false

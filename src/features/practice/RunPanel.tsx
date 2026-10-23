@@ -9,6 +9,8 @@ import {
   Trash2,
 } from "lucide-react"
 import { fetchJson } from "../../lib/api"
+import { runtimeLabel } from "../../lib/courseOptions"
+import type { RuntimeKind } from "../../lib/types"
 import "./RunPanel.css"
 
 interface RunResult {
@@ -30,11 +32,13 @@ export function RunPanel({
   taskId,
   files,
   kind,
+  runtime = "lua",
 }: {
   lessonId: string
   taskId: string
   files: Array<{ name: string; content: string }>
   kind: "code" | "terminal" | "love" | "project"
+  runtime?: RuntimeKind
 }) {
   const [args, setArgs] = useState("")
   const [stdin, setStdin] = useState("")
@@ -83,7 +87,7 @@ export function RunPanel({
         <div className="run-panel__title">
           <Terminal size={14} aria-hidden />
           <span>Консоль</span>
-          <small>{kind === "love" ? "предпросмотр" : "lua 5.5"}</small>
+          <small>{kind === "love" ? "предпросмотр" : runtimeLabel(runtime)}</small>
         </div>
         <div className="run-panel__actions">
           <span className="run-panel__shortcut">Ctrl + Enter</span>
@@ -127,7 +131,7 @@ export function RunPanel({
             <textarea
               value={stdin}
               onChange={(event) => setStdin(event.target.value)}
-              placeholder="То, что программа прочитает через io.read()"
+              placeholder="То, что программа прочитает со стандартного ввода"
               rows={3}
               spellCheck={false}
             />
@@ -145,7 +149,7 @@ export function RunPanel({
         {error && (
           <div className="run-console__error">
             <CircleAlert size={14} aria-hidden />
-            <span>{error === "love_preview_is_client_side" ? "Для LÖVE используется предпросмотр." : `Не удалось запустить: ${error}`}</span>
+            <span>{error === "love_preview_is_client_side" ? "Для LÖVE используется предпросмотр." : error === "runtime_not_configured" ? "В настройках курса не задана команда запуска." : `Не удалось запустить: ${error}`}</span>
           </div>
         )}
         {result && (

@@ -1,15 +1,14 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { CircleCheck, LoaderCircle, RotateCcw, Save } from "lucide-react"
-import { saveMentorPrompt, useMentorPrompt } from "../../lib/settings"
+import { saveConstructorPrompt, useConstructorPrompt } from "../../lib/courseSettings"
 
-export function MentorTab() {
-  const promptQuery = useMentorPrompt()
+export function ConstructorTab() {
+  const promptQuery = useConstructorPrompt()
   const queryClient = useQueryClient()
   const [value, setValue] = useState("")
   const [dirty, setDirty] = useState(false)
   const [savedAt, setSavedAt] = useState<number | null>(null)
-  const savedTimer = useRef<number | null>(null)
 
   useEffect(() => {
     if (promptQuery.data) {
@@ -19,33 +18,33 @@ export function MentorTab() {
   }, [promptQuery.data])
 
   const save = useMutation({
-    mutationFn: () => saveMentorPrompt(value),
+    mutationFn: () => saveConstructorPrompt(value),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["settings-mentor-prompt"] })
+      void queryClient.invalidateQueries({ queryKey: ["constructor-prompt"] })
+      void queryClient.invalidateQueries({ queryKey: ["settings-checks"] })
       setDirty(false)
       setSavedAt(Date.now())
-      if (savedTimer.current) window.clearTimeout(savedTimer.current)
-      savedTimer.current = window.setTimeout(() => setSavedAt(null), 4000)
     },
   })
 
   const serverValue = promptQuery.data?.prompt ?? ""
+  const defaultPrompt = promptQuery.data?.defaultPrompt ?? ""
   const savedRecently = savedAt !== null && !dirty && Date.now() - savedAt < 6000
 
   return (
-    <div className="mentor-panel">
+    <div className="constructor-panel">
       <div className="settings-mentor-intro">
-        <h2>Промпт наставника</h2>
+        <h2>Конструктор курсов</h2>
         <p>
-          Этот текст задаёт характер и правила учителя: как он объясняет, как проверяет и почему
-          не даёт готовый код. Он используется и локальным OpenCode, и прямыми подключениями к
-          нейросетям. Изменения применятся к новым обращениям.
+          Этот текст задаёт стиль и педагогику конструктора: как он придумывает карточку,
+          собирает программу, выбирает практику и пишет промпт наставника. Точную
+          JSON-структуру приложение задаёт само, поэтому промпт можно менять свободно.
         </p>
       </div>
 
       {promptQuery.isError && (
         <div className="settings-error">
-          <p>Не удалось загрузить промпт.</p>
+          <p>Не удалось загрузить промпт конструктора.</p>
           <button type="button" className="settings-button settings-button--ghost" onClick={() => void promptQuery.refetch()}>
             Повторить
           </button>
@@ -61,7 +60,7 @@ export function MentorTab() {
               className="mentor-textarea"
               value={value}
               spellCheck={false}
-              aria-label="Промпт наставника"
+              aria-label="Промпт конструктора"
               onChange={(event) => {
                 setValue(event.target.value)
                 setDirty(true)
@@ -85,21 +84,22 @@ export function MentorTab() {
               <button
                 type="button"
                 className="settings-button settings-button--ghost"
-                disabled={!dirty}
+                disabled={!defaultPrompt || save.isPending}
                 onClick={() => {
-                  setValue(serverValue)
-                  setDirty(false)
+                  setValue(defaultPrompt)
+                  setDirty(true)
+                  setSavedAt(null)
                 }}
               >
                 <RotateCcw size={14} aria-hidden />
-                Вернуть как было
+                Вернуть стандартный
               </button>
               {savedRecently && (
                 <span className="settings-saved">
                   <CircleCheck size={14} aria-hidden /> Сохранено
                 </span>
               )}
-              {save.isError && <span className="settings-save-error">Не удалось сохранить: {String(save.error.message)}</span>}
+              {save.isError && <span className="settings-save-error">Не удалось сохранить: {save.error.message}</span>}
             </div>
           </>
         )

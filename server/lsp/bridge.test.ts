@@ -45,4 +45,28 @@ describe("LSP bridge", () => {
       wss.close()
     }
   })
+
+  it("closes with lsp_start_failed when the binary is missing", async () => {
+    const wss = new WebSocketServer({ port: 0, host: "127.0.0.1" })
+    wss.on("connection", (ws) => {
+      createLspBridge(ws, { command: "ladder-missing-lsp-binary-xyz" })
+    })
+    await once(wss, "listening")
+    const port = (wss.address() as AddressInfo).port
+    const client = new WebSocket(`ws://127.0.0.1:${port}`)
+    try {
+      await once(client, "open")
+      const closed = await Promise.race([
+        once(client, "close") as Promise<[number, Buffer]>,
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("close timeout")), 4000),
+        ),
+      ])
+      expect(closed[0]).toBe(1011)
+      expect(String(closed[1])).toBe("lsp_start_failed")
+    } finally {
+      client.close()
+      wss.close()
+    }
+  })
 })

@@ -4,11 +4,20 @@ import { ArrowRight, Check, CircleAlert, GraduationCap, LoaderCircle } from "luc
 import { useLesson } from "../../lib/useLesson"
 import { fetchJson } from "../../lib/api"
 import { QuestionCard } from "./QuestionCard"
+import { SubmitPanel } from "../practice/SubmitPanel"
 import "./QuizTab.css"
 
 type SaveState = "idle" | "saving" | "saved" | "error"
 
-export function QuizTab({ lessonId, onPractice }: { lessonId: string; onPractice?: () => void }) {
+export function QuizTab({
+  lessonId,
+  onPractice,
+  practice = false,
+}: {
+  lessonId: string
+  onPractice?: () => void
+  practice?: boolean
+}) {
   const { data: lesson, isLoading, isError, refetch } = useLesson(lessonId)
   const queryClient = useQueryClient()
   const [answers, setAnswers] = useState<Record<string, number | string>>({})
@@ -99,75 +108,80 @@ export function QuizTab({ lessonId, onPractice }: { lessonId: string; onPractice
   const percent = total ? Math.round((answered / total) * 100) : 0
 
   return (
-    <div className="quiz-layout">
-      <div className="quiz-main">
-        <header className="quiz-head">
-          <span className="section-kicker">
-            <GraduationCap size={13} aria-hidden /> проверь себя
-          </span>
-          <h2>{lesson.quiz.title}</h2>
-          <p>
-            Смешанный квиз: тесты и письменные ответы. Разбор появится после сдачи урока.
-          </p>
-          <div className="quiz-progress" aria-label={`Отвечено ${answered} из ${total}`}>
-            <div className="quiz-progress__labels">
-              <span>отвечено {answered} из {total}</span>
-              <b>{percent}%</b>
+    <>
+      <div className="quiz-layout">
+        <div className="quiz-main">
+          <header className="quiz-head">
+            <span className="section-kicker">
+              <GraduationCap size={13} aria-hidden /> {practice ? "практика" : "проверь себя"}
+            </span>
+            <h2>{lesson.quiz.title}</h2>
+            <p>
+              {practice
+                ? "Ответь на тестовые вопросы и развёрнутые задания. Наставник проверит понимание и разберёт ответы."
+                : "Смешанный квиз: тесты и письменные ответы. Разбор появится после сдачи урока."}
+            </p>
+            <div className="quiz-progress" aria-label={`Отвечено ${answered} из ${total}`}>
+              <div className="quiz-progress__labels">
+                <span>отвечено {answered} из {total}</span>
+                <b>{percent}%</b>
+              </div>
+              <div className="quiz-progress__bar">
+                <i style={{ width: `${percent}%` }} />
+              </div>
             </div>
-            <div className="quiz-progress__bar">
+          </header>
+
+          <div className="quiz-questions">
+            {lesson.quiz.questions.map((question, index) => (
+              <QuestionCard
+                key={question.id}
+                question={question}
+                index={index}
+                value={answers[question.id]}
+                onChange={(value) => updateAnswer(question.id, value)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <aside className="quiz-rail">
+          <div className="quiz-rail__card">
+            <span className="quiz-rail__label">готовность</span>
+            <strong>
+              {answered}
+              <small> / {total}</small>
+            </strong>
+            <div className="quiz-rail__line">
               <i style={{ width: `${percent}%` }} />
             </div>
+            <div className={`quiz-save quiz-save--${saveState}`}>
+              {saveState === "saving" && <LoaderCircle size={12} className="spin" aria-hidden />}
+              {saveState === "saved" && <Check size={12} aria-hidden />}
+              {saveState === "error" && <CircleAlert size={12} aria-hidden />}
+              <span>
+                {saveState === "saving"
+                  ? "сохраняем"
+                  : saveState === "saved"
+                    ? "сохранено"
+                    : saveState === "error"
+                      ? "не сохранено"
+                      : "черновик"}
+              </span>
+            </div>
           </div>
-        </header>
-
-        <div className="quiz-questions">
-          {lesson.quiz.questions.map((question, index) => (
-            <QuestionCard
-              key={question.id}
-              question={question}
-              index={index}
-              value={answers[question.id]}
-              onChange={(value) => updateAnswer(question.id, value)}
-            />
-          ))}
-        </div>
+          <p className="quiz-rail__note">
+            Не спеши: ответы можно менять до сдачи. Правильные варианты откроются только после
+            проверки наставником.
+          </p>
+          {!practice && onPractice && (
+            <button type="button" className="quiz-rail__next" onClick={onPractice}>
+              К практике <ArrowRight size={14} aria-hidden />
+            </button>
+          )}
+        </aside>
       </div>
-
-      <aside className="quiz-rail">
-        <div className="quiz-rail__card">
-          <span className="quiz-rail__label">готовность</span>
-          <strong>
-            {answered}
-            <small> / {total}</small>
-          </strong>
-          <div className="quiz-rail__line">
-            <i style={{ width: `${percent}%` }} />
-          </div>
-          <div className={`quiz-save quiz-save--${saveState}`}>
-            {saveState === "saving" && <LoaderCircle size={12} className="spin" aria-hidden />}
-            {saveState === "saved" && <Check size={12} aria-hidden />}
-            {saveState === "error" && <CircleAlert size={12} aria-hidden />}
-            <span>
-              {saveState === "saving"
-                ? "сохраняем"
-                : saveState === "saved"
-                  ? "сохранено"
-                  : saveState === "error"
-                    ? "не сохранено"
-                    : "черновик"}
-            </span>
-          </div>
-        </div>
-        <p className="quiz-rail__note">
-          Не спеши: ответы можно менять до сдачи. Правильные варианты откроются только после
-          проверки наставником.
-        </p>
-        {onPractice && (
-          <button type="button" className="quiz-rail__next" onClick={onPractice}>
-            К практике <ArrowRight size={14} aria-hidden />
-          </button>
-        )}
-      </aside>
-    </div>
+      {practice && <SubmitPanel lesson={lesson} />}
+    </>
   )
 }

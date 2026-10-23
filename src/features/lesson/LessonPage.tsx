@@ -10,6 +10,7 @@ import {
   LockKeyhole,
 } from "lucide-react"
 import { useLesson } from "../../lib/useLesson"
+import { plural } from "../../lib/plural"
 import { useSession } from "../session/SessionContext"
 import type { LessonDetail } from "../../lib/types"
 import { PageSkeleton } from "../course/CourseStates"
@@ -40,11 +41,14 @@ export function LessonPage({ lessonId }: { lessonId?: string }) {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const rawTab = searchParams.get("tab")
-  const tab: Tab = rawTab === "questions" || rawTab === "practice" ? rawTab : "theory"
+  const general = Boolean(lesson && lesson.course?.mode === "general" && lesson.tasks.length === 0)
+  const tab: Tab =
+    rawTab === "practice" ? "practice" : rawTab === "questions" && !general ? "questions" : "theory"
   const setTab = (next: Tab) => setSearchParams(next === "theory" ? {} : { tab: next }, { replace: true })
 
   const quizCount = lesson?.quiz?.questions.length ?? 0
   const taskCount = lesson?.tasks.length ?? 0
+  const tabs: Tab[] = general ? ["theory", "practice"] : ["theory", "questions", "practice"]
   const panelId = `lesson-panel-${tab}`
 
   useEffect(() => {
@@ -70,8 +74,11 @@ export function LessonPage({ lessonId }: { lessonId?: string }) {
     if (tab === "questions") {
       return <QuizTab lessonId={lesson.id} onPractice={() => setTab("practice")} />
     }
+    if (tab === "practice" && general) {
+      return <QuizTab lessonId={lesson.id} practice />
+    }
     return <PracticeTab lessonId={lesson.id} onQuestions={() => setTab("questions")} />
-  }, [lesson, tab])
+  }, [lesson, tab, general])
 
   if (isLoading) return <PageSkeleton label="Открываем урок" />
   if (isError || !lesson) {
@@ -95,7 +102,7 @@ export function LessonPage({ lessonId }: { lessonId?: string }) {
             </button>
           )}
           <Link to="/">
-            <ArrowLeft size={14} aria-hidden /> К программе
+            <ArrowLeft size={14} aria-hidden /> К курсам
           </Link>
         </div>
       </div>
@@ -105,7 +112,9 @@ export function LessonPage({ lessonId }: { lessonId?: string }) {
   return (
     <div className="lesson-page">
       <div className="lesson-breadcrumb">
-        <Link to="/">Программа</Link>
+        <Link to={lesson.course ? `/courses/${lesson.course.id}` : "/"}>
+          {lesson.course?.title ?? "Курс"}
+        </Link>
         <span>/</span>
         <span>{lesson.chapterTitle ?? "Урок"}</span>
         <span>/</span>
@@ -129,11 +138,19 @@ export function LessonPage({ lessonId }: { lessonId?: string }) {
             <BookOpen size={14} aria-hidden /> теория
           </span>
           <span>
-            <ListChecks size={14} aria-hidden /> {quizCount} вопросов
+            <ListChecks size={14} aria-hidden /> {quizCount}{" "}
+            {plural(quizCount, ["вопрос", "вопроса", "вопросов"])}
           </span>
-          <span>
-            <Code2 size={14} aria-hidden /> {taskCount} заданий
-          </span>
+          {general ? (
+            <span>
+              <BookOpen size={14} aria-hidden /> практика в квизе
+            </span>
+          ) : (
+            <span>
+              <Code2 size={14} aria-hidden /> {taskCount}{" "}
+              {plural(taskCount, ["задание", "задания", "заданий"])}
+            </span>
+          )}
         </div>
       </header>
 
@@ -147,7 +164,7 @@ export function LessonPage({ lessonId }: { lessonId?: string }) {
       )}
 
       <div className="lesson-tabs" role="tablist" aria-label="Разделы урока">
-        {(Object.keys(TAB_LABELS) as Tab[]).map((item) => (
+        {(tabs).map((item) => (
           <button
             key={item}
             type="button"
@@ -161,7 +178,9 @@ export function LessonPage({ lessonId }: { lessonId?: string }) {
           >
             {TAB_LABELS[item]}
             {item === "questions" && <span className="lesson-tab__count">{quizCount}</span>}
-            {item === "practice" && <span className="lesson-tab__count">{taskCount}</span>}
+            {item === "practice" && (
+              <span className="lesson-tab__count">{general ? quizCount : taskCount}</span>
+            )}
           </button>
         ))}
       </div>
@@ -177,8 +196,8 @@ export function LessonPage({ lessonId }: { lessonId?: string }) {
 
       <div className="lesson-next">
         {tab === "theory" && (
-          <button type="button" onClick={() => setTab("questions")}>
-            К вопросам <ArrowRight size={14} aria-hidden />
+          <button type="button" onClick={() => setTab(general ? "practice" : "questions")}>
+            {general ? "К практике" : "К вопросам"} <ArrowRight size={14} aria-hidden />
           </button>
         )}
         {tab === "questions" && (
@@ -188,7 +207,7 @@ export function LessonPage({ lessonId }: { lessonId?: string }) {
         )}
         {tab === "practice" && (
           <span className="lesson-next__note">
-            Проверь код локально, затем сдай урок наставнику.
+            Проверь себя, затем сдай урок наставнику.
           </span>
         )}
       </div>

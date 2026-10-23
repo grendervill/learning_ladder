@@ -36,9 +36,11 @@ export interface SubmitResponse {
 export function SubmitPanel({
   lesson,
   onQuestions,
+  extraReady = true,
 }: {
   lesson: LessonDetail
   onQuestions?: () => void
+  extraReady?: boolean
 }) {
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState<SubmitResponse | null>(null)
@@ -46,6 +48,8 @@ export function SubmitPanel({
   const queryClient = useQueryClient()
 
   const total = lesson.quiz?.questions.length ?? 0
+  const general = lesson.course?.mode === "general" && lesson.tasks.length === 0
+  const steps = lesson.tasks.some((task) => task.kind === "steps")
   const answered = useMemo(() => {
     if (!lesson.quiz) return 0
     return lesson.quiz.questions.filter((question) => {
@@ -53,7 +57,7 @@ export function SubmitPanel({
       return answer !== undefined && answer !== ""
     }).length
   }, [lesson.answers, lesson.quiz])
-  const ready = total > 0 && answered === total
+  const ready = total > 0 && answered === total && extraReady
 
   const submit = async () => {
     if (!ready || submitting) return
@@ -67,6 +71,7 @@ export function SubmitPanel({
       setResult(response)
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["course"] }),
+        queryClient.invalidateQueries({ queryKey: ["courses"] }),
         queryClient.invalidateQueries({ queryKey: ["lesson", lesson.id] }),
         queryClient.invalidateQueries({ queryKey: ["progress"] }),
       ])
@@ -86,6 +91,7 @@ export function SubmitPanel({
       <FeedbackPanel
         result={result}
         onRetry={() => setResult(null)}
+        courseId={lesson.course?.id}
       />
     )
   }
@@ -98,19 +104,31 @@ export function SubmitPanel({
         </span>
         <h3>Готов сдать урок?</h3>
         <p>
-          Наставник проверит код, вывод и ответы на вопросы. Оценка 4+ откроет следующую
-          папку. До сдачи можно всё менять.
+          {steps
+            ? "Наставник проверит решение по шагам, формулы и финальный ответ. Оценка 4+ откроет следующий урок. До сдачи можно всё менять."
+            : general
+              ? "Наставник проверит ответы на тестовые и письменные вопросы. Оценка 4+ откроет следующий урок. До сдачи можно всё менять."
+              : "Наставник проверит код, вывод и ответы на вопросы. Оценка 4+ откроет следующий шаг. До сдачи можно всё менять."}
         </p>
         <div className="submit-readiness">
           <span className={answered === total ? "done" : ""}>
             {answered === total ? <CheckCircle2 size={12} aria-hidden /> : <CircleAlert size={12} aria-hidden />}
             вопросы: {answered} / {total}
           </span>
-          <span className="done">
-            <CheckCircle2 size={12} aria-hidden /> задания: {lesson.tasks.length}
-          </span>
+          {steps ? (
+            <span className={extraReady ? "done" : ""}>
+              {extraReady ? <CheckCircle2 size={12} aria-hidden /> : <CircleAlert size={12} aria-hidden />}
+              шаги решения
+            </span>
+          ) : (
+            !general && (
+              <span className="done">
+                <CheckCircle2 size={12} aria-hidden /> задания: {lesson.tasks.length}
+              </span>
+            )
+          )}
         </div>
-        {!ready && total > 0 && (
+        {answered < total && total > 0 && !general && (
           <button type="button" className="submit-panel__questions" onClick={onQuestions}>
             Ответить на вопросы <ArrowRight size={13} aria-hidden />
           </button>

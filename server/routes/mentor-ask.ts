@@ -1,13 +1,14 @@
 import { randomUUID } from "node:crypto"
 import { Router } from "express"
 import type { AppContext } from "../context"
-import { accessFor } from "../access-data"
+import { accessForLesson } from "../access-data"
 import { isLessonAccessible } from "../access"
 import type { MentorService } from "../mentor/service"
 import type { MentorContext, MentorRun } from "../mentor/types"
 import type { TaskFile } from "../content/types"
 import { acquireMentorSession, recordActivity } from "../sessions/lifecycle"
 import { mergeTaskFiles } from "../files"
+import { courseIdForLesson, readMentorPrompt } from "../content/courses"
 
 function savedFiles(context: AppContext, lessonId: string, taskId: string, starter: TaskFile[]): TaskFile[] {
   const saved = context.db
@@ -52,7 +53,7 @@ export function createMentorAskRouter(
         res.status(404).json({ error: "lesson_not_found" })
         return
       }
-      const access = accessFor(context.db, course)
+      const access = accessForLesson(context.db, course, lessonId)
       if (!isLessonAccessible(course, lessonId) || access.lessons[lessonId] === "locked") {
         res.status(403).json({ error: "lesson_locked" })
         return
@@ -65,6 +66,10 @@ export function createMentorAskRouter(
         taskTitle: task?.title,
         code: task ? savedFiles(context, lessonId, task.id, task.files) : undefined,
         lastRun: task ? lastRun(context, lessonId, task.id) : null,
+        mentorPrompt: readMentorPrompt(
+          context.root ?? process.cwd(),
+          courseIdForLesson(course, lessonId),
+        ),
       }
     }
 

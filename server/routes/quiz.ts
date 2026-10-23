@@ -1,6 +1,6 @@
 import { Router } from "express"
 import type { AppContext } from "../context"
-import { accessFor } from "../access-data"
+import { accessForLesson } from "../access-data"
 import { isLessonAccessible } from "../access"
 import { recordActivity } from "../sessions/lifecycle"
 
@@ -15,7 +15,7 @@ export function createQuizRouter(getContext: () => AppContext): Router {
       res.status(404).json({ error: "lesson_not_found" })
       return
     }
-    const access = accessFor(context.db, course)
+    const access = accessForLesson(context.db, course, lesson.id)
     if (!isLessonAccessible(course, lesson.id) || access.lessons[lesson.id] === "locked") {
       res.status(403).json({ error: "lesson_locked" })
       return

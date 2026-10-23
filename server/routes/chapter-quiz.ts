@@ -1,6 +1,7 @@
 import { Router } from "express"
 import type { AppContext } from "../context"
-import { accessFor } from "../access-data"
+import { accessForCourse } from "../access-data"
+import { courseIdOf, courseView, coursesOf, readMentorPrompt } from "../content/courses"
 import type { MentorService } from "../mentor/service"
 import type { MentorReviewRequest } from "../mentor/types"
 import { publicQuiz } from "../content/serialize"
@@ -15,7 +16,7 @@ function allLessonsPassed(context: AppContext, chapterId: string) {
   const course = context.getCourse()
   const chapter = course.chapters.find((item) => item.id === chapterId)
   if (!chapter) return false
-  const access = accessFor(context.db, course)
+  const access = accessForCourse(context.db, course, courseIdOf(chapter))
   return chapter.lessonIds.every((id) => access.lessons[id] === "passed")
 }
 
@@ -61,7 +62,7 @@ export function createChapterQuizRouter(
       res.status(404).json({ error: "chapter_quiz_missing" })
       return
     }
-    const access = accessFor(context.db, course)
+    const access = accessForCourse(context.db, course, courseIdOf(chapter))
     const passed = access.chapters[chapter.id] === "passed"
     if (!passed && !allLessonsPassed(context, chapter.id)) {
       res.status(403).json({ error: "chapter_quiz_locked" })
@@ -70,8 +71,12 @@ export function createChapterQuizRouter(
     const progress = context.db
       .prepare("select chapter_quiz_grade as grade, feedback_json as feedbackJson from chapter_progress where chapter_id = ?")
       .get(chapter.id) as any
+    const courseId = courseIdOf(chapter)
+    const courseMeta = coursesOf(course).find((item) => item.id === courseId)
     res.json({
       chapterId: chapter.id,
+      courseId,
+      courseTitle: courseMeta?.title ?? "",
       title: chapter.title,
       description: chapter.description,
       quiz: publicQuiz(chapter.quiz, passed),
@@ -141,6 +146,7 @@ export function createChapterQuizRouter(
       chapterTitle: chapter.title,
       tasks: [],
       quiz,
+      mentorPrompt: readMentorPrompt(context.root ?? process.cwd(), courseIdOf(chapter)),
     }
 
     const mentor = getMentor()
@@ -206,9 +212,10 @@ export function createChapterQuizRouter(
       throw error
     }
 
-    const access = accessFor(context.db, course)
-    const index = course.chapters.findIndex((item) => item.id === chapter.id)
-    const nextChapter = course.chapters[index + 1]
+    const access = accessForCourse(context.db, course, courseIdOf(chapter))
+    const view = courseView(course, courseIdOf(chapter))
+    const index = view.chapters.findIndex((item) => item.id === chapter.id)
+    const nextChapter = view.chapters[index + 1]
     const nextLessonId =
       nextChapter?.lessonIds.find((id) => access.lessons[id] === "available") ?? null
 

@@ -23,6 +23,8 @@
   align-items: center;
   gap: 12px;
   padding: 0 6px 23px;
+  color: inherit;
+  text-decoration: none;
 }
 
 .moon-mark {
@@ -398,6 +400,95 @@ a.sidebar-quiz:hover {
   padding: 10px;
   color: #f0b8a8;
   font-size: 11px;
+}
+
+.sidebar-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 6px 16px;
+  color: var(--sidebar-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-decoration: none;
+}
+
+.sidebar-back:hover {
+  color: var(--sidebar-text);
+}
+
+.sidebar-course-list {
+  display: grid;
+  gap: 2px;
+  padding: 0 2px;
+}
+
+.sidebar-course-link {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 8px;
+  border-radius: 8px;
+  color: color-mix(in srgb, var(--sidebar-text) 82%, transparent);
+  font-size: 12.5px;
+  line-height: 1.3;
+  text-decoration: none;
+  transition: background var(--transition), color var(--transition);
+}
+
+.sidebar-course-link:hover {
+  background: color-mix(in srgb, var(--sidebar-accent) 7%, transparent);
+  color: var(--sidebar-text);
+}
+
+.sidebar-course-dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--sidebar-accent);
+}
+
+.sidebar-course-dot--amber {
+  background: #e0b27f;
+}
+
+.sidebar-course-dot--ocean {
+  background: #8fc4de;
+}
+
+.sidebar-course-dot--plum {
+  background: #caa8cf;
+}
+
+.sidebar-course-dot--clay {
+  background: #d99a85;
+}
+
+.sidebar-course-title {
+  min-width: 0;
+}
+
+.sidebar-course-percent {
+  margin-left: auto;
+  color: var(--sidebar-muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.sidebar-create-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 9px 6px 0;
+  color: var(--sidebar-accent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-decoration: none;
+}
+
+.sidebar-create-link:hover {
+  text-decoration: underline;
 }
 
 .sidebar-skeleton {

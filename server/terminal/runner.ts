@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process"
 import { existsSync, statSync } from "node:fs"
 import { resolve, sep } from "node:path"
-import { workspacePath, DEFAULT_WORKSPACE_ROOT } from "../lua/workspace"
+import { workspacePath, defaultWorkspaceRoot } from "../lua/workspace"
 
 const MAX_OUTPUT_BYTES = 64 * 1024
 const cwdState = new Map<string, string>()
@@ -52,7 +52,7 @@ export async function runTerminalCommand(
   input: TerminalCommandInput,
 ): Promise<TerminalCommandResult> {
   const started = Date.now()
-  const root = input.workspaceRoot ?? DEFAULT_WORKSPACE_ROOT
+  const root = input.workspaceRoot ?? defaultWorkspaceRoot()
   const cwd = resolveCwd(input.lessonId, input.taskId, input.cwd, root)
   const workspace = workspacePath(input.lessonId, input.taskId, root)
   const command = input.command.trim()

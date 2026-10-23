@@ -1,11 +1,12 @@
 import { Router } from "express"
 import type { AppContext } from "../context"
-import { accessFor } from "../access-data"
+import { accessForLesson } from "../access-data"
 import { isLessonAccessible } from "../access"
 import type { MentorService } from "../mentor/service"
 import type { MentorReviewRequest, MentorRun, MentorTaskInput } from "../mentor/types"
 import { acquireMentorSession, recordActivity } from "../sessions/lifecycle"
 import { mergeTaskFiles } from "../files"
+import { courseIdForLesson, courseMetaForLesson, readMentorPrompt } from "../content/courses"
 
 function loadAnswers(context: AppContext, lessonId: string): Record<string, number | string> {
   return Object.fromEntries(
@@ -66,7 +67,7 @@ export function createSubmitRouter(getContext: () => AppContext, getMentor: () =
       res.status(404).json({ error: "lesson_not_found" })
       return
     }
-    const access = accessFor(context.db, course)
+    const access = accessForLesson(context.db, course, lesson.id)
     if (!isLessonAccessible(course, lesson.id) || access.lessons[lesson.id] === "locked") {
       res.status(403).json({ error: "lesson_locked" })
       return
@@ -78,7 +79,9 @@ export function createSubmitRouter(getContext: () => AppContext, getMentor: () =
     const blockingContentErrors = lesson.errors.filter((error) =>
       ["lesson_missing_readme", "lesson_missing_tasks", "lesson_read_error"].includes(error.code),
     )
-    if (lesson.tasks.length === 0 || blockingContentErrors.length > 0) {
+    const courseMeta = courseMetaForLesson(course, lesson.id)
+    const generalQuizPractice = courseMeta.mode === "general" && Boolean(lesson.quiz)
+    if ((lesson.tasks.length === 0 && !generalQuizPractice) || blockingContentErrors.length > 0) {
       res.status(400).json({
         error: "lesson_incomplete",
         errors: blockingContentErrors.map((error) => error.code),
@@ -95,7 +98,29 @@ export function createSubmitRouter(getContext: () => AppContext, getMentor: () =
       files: loadFiles(context, lesson.id, task.id, task.files),
       lastRun: lastRun(context, lesson.id, task.id),
       terminalHistory: task.kind === "terminal" ? terminalHistory(context, lesson.id, task.id) : undefined,
+      criteria: task.criteria,
     }))
+    const stepsTask = tasks.find((task) => task.kind === "steps")
+    if (stepsTask) {
+      const solution = stepsTask.files.find((file) => file.name === "solution.json")?.content ?? ""
+      let hasStep = false
+      try {
+        const parsed = JSON.parse(solution)
+        hasStep =
+          Array.isArray(parsed.steps) &&
+          parsed.steps.some(
+            (step: any) =>
+              String(step?.formula ?? "").trim().length > 0 ||
+              String(step?.explanation ?? "").trim().length > 0,
+          )
+      } catch {
+        hasStep = false
+      }
+      if (!hasStep) {
+        res.status(400).json({ error: "steps_empty" })
+        return
+      }
+    }
     const quiz = lesson.quiz.questions.map((question) => ({
       id: question.id,
       type: question.type,
@@ -122,6 +147,7 @@ export function createSubmitRouter(getContext: () => AppContext, getMentor: () =
       })
 
     const chapter = course.chapters.find((item) => item.lessonIds.includes(lesson.id))
+    const courseId = courseIdForLesson(course, lesson.id)
     const request: MentorReviewRequest = {
       lessonId: lesson.id,
       lessonTitle: lesson.title,
@@ -131,6 +157,7 @@ export function createSubmitRouter(getContext: () => AppContext, getMentor: () =
       tasks,
       quiz,
       previousAttempts,
+      mentorPrompt: readMentorPrompt(context.root ?? process.cwd(), courseId),
     }
 
     const mentor = getMentor()
@@ -221,7 +248,7 @@ export function createSubmitRouter(getContext: () => AppContext, getMentor: () =
       throw error
     }
 
-    const after = accessFor(context.db, course)
+    const after = accessForLesson(context.db, course, lesson.id)
     const nextLessonId =
       chapter?.lessonIds.find((id) => id !== lesson.id && after.lessons[id] === "available") ?? null
 

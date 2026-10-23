@@ -74,8 +74,14 @@ export function computeAccess(
       }
     }
 
+    const chapterHasQuiz = Boolean(chapter.quiz)
+    const chapterCompleted =
+      chapter.lessonIds.length > 0 &&
+      allLessonsPassed &&
+      (!chapterHasQuiz || chapterRowStatus === "passed")
+
     let chapterStatus: ChapterStatus
-    if (chapterRowStatus === "passed") {
+    if (chapterRowStatus === "passed" || chapterCompleted) {
       chapterStatus = "passed"
     } else if (chapterUnlocked) {
       chapterStatus = allLessonsPassed || anyLessonPassed ? "in_progress" : "available"
@@ -84,11 +90,11 @@ export function computeAccess(
     }
 
     access.chapters[chapter.id] = chapterStatus
-    if (allLessonsPassed && chapterStatus !== "passed" && chapterUnlocked) {
+    if (chapterHasQuiz && allLessonsPassed && chapterStatus !== "passed" && chapterUnlocked) {
       access.nextChapterQuizId = chapter.id
     }
 
-    previousChapterPassed = chapterRowStatus === "passed"
+    previousChapterPassed = chapterStatus === "passed"
   }
 
   return access

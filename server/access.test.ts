@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { computeAccess, isLessonAccessible, type ChapterProgressRow, type LessonProgressRow } from "./access"
-import type { CourseSnapshot, LessonContent } from "./content/types"
+import type { CourseSnapshot, LessonContent, Quiz } from "./content/types"
+
+const chapterQuiz: Quiz = { title: "Квиз главы", questions: [] }
 
 function lesson(id: string): LessonContent {
   return {
@@ -22,7 +24,7 @@ const snapshot: CourseSnapshot = {
       title: "Основы",
       description: "",
       lessonIds: ["01", "02", "03"],
-      quiz: null,
+      quiz: chapterQuiz,
       errors: [],
     },
     {
@@ -30,7 +32,7 @@ const snapshot: CourseSnapshot = {
       title: "Дальше",
       description: "",
       lessonIds: ["04"],
-      quiz: null,
+      quiz: chapterQuiz,
       errors: [],
     },
   ],
@@ -84,6 +86,16 @@ describe("computeAccess", () => {
     const access = computeAccess(snapshot, progress, [chapterPassed("foundations")])
     expect(access.lessons["04"]).toBe("available")
     expect(access.chapters.next).toBe("available")
+  })
+
+  it("auto-passes a chapter without a quiz once all its lessons are passed", () => {
+    const withoutQuiz: CourseSnapshot = {
+      ...snapshot,
+      chapters: [{ ...snapshot.chapters[0], quiz: null }, snapshot.chapters[1]],
+    }
+    const access = computeAccess(withoutQuiz, [passed("01"), passed("02"), passed("03")], [])
+    expect(access.chapters.foundations).toBe("passed")
+    expect(access.lessons["04"]).toBe("available")
   })
 
   it("never relocks an already available lesson", () => {

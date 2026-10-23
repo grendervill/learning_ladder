@@ -1,6 +1,7 @@
 import type { DatabaseSync } from "./db"
 import { computeAccess, type AccessState, type ChapterProgressRow, type LessonProgressRow } from "./access"
 import type { CourseSnapshot } from "./content/types"
+import { courseIdForLesson, courseView } from "./content/courses"
 
 export function loadProgressRows(db: DatabaseSync): {
   lessons: LessonProgressRow[]
@@ -24,4 +25,20 @@ export function loadProgressRows(db: DatabaseSync): {
 export function accessFor(db: DatabaseSync, course: CourseSnapshot): AccessState {
   const rows = loadProgressRows(db)
   return computeAccess(course, rows.lessons, rows.chapters)
+}
+
+export function accessForCourse(
+  db: DatabaseSync,
+  snapshot: CourseSnapshot,
+  courseId: string,
+): AccessState {
+  return accessFor(db, courseView(snapshot, courseId))
+}
+
+export function accessForLesson(
+  db: DatabaseSync,
+  snapshot: CourseSnapshot,
+  lessonId: string,
+): AccessState {
+  return accessForCourse(db, snapshot, courseIdForLesson(snapshot, lessonId))
 }

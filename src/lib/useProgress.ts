@@ -31,6 +31,9 @@ export interface ProgressAttempt {
   kind: string
   submittedAt: string
   grade: number
+  courseId: string
+  courseTitle: string
+  itemTitle: string
   feedback: any | null
 }
 
@@ -44,6 +47,8 @@ export interface ProgressSession {
 }
 
 export interface ProgressResponse {
+  courseId: string
+  courseTitle: string
   access: AccessState
   lessons: Record<string, ProgressLesson>
   chapters: Record<string, ProgressChapter>
@@ -51,10 +56,14 @@ export interface ProgressResponse {
   sessions: ProgressSession[]
 }
 
-export function useProgress() {
+export function useProgress(courseId?: string) {
   return useQuery({
-    queryKey: ["progress"],
-    queryFn: () => fetchJson<ProgressResponse>("/api/progress"),
+    queryKey: ["progress", courseId ?? "active"],
+    queryFn: () =>
+      fetchJson<ProgressResponse>(
+        `/api/progress${courseId ? `?courseId=${encodeURIComponent(courseId)}` : ""}`,
+      ),
+    enabled: Boolean(courseId),
     staleTime: 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,

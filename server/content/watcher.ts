@@ -8,7 +8,7 @@ export interface WatcherOptions {
 }
 
 export function startContentWatcher({ root, onChange, debounceMs = 1200 }: WatcherOptions): FSWatcher {
-  const watcher = chokidar.watch([`${root}/lessons`, `${root}/course`], {
+  const watcher = chokidar.watch([`${root}/courses`], {
     ignoreInitial: true,
     ignored: [
       "**/node_modules/**",

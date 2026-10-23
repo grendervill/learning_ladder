@@ -1,0 +1,29 @@
+.home-course-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.home-course-nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  text-decoration: none;
+}
+
+.home-course-nav a:hover {
+  color: var(--text);
+}
+
+.home-course-nav .course-settings-link {
+  color: var(--accent);
+}
+
+.home-continue--complete {
+  grid-template-columns: minmax(0, 1fr) 150px;
+}

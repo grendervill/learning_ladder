@@ -4,7 +4,7 @@ import { fetchJson } from "./api"
 export interface TaskFilesResponse {
   files: Array<{ name: string; content: string }>
   starterFiles: Array<{ name: string; content: string }>
-  kind: "code" | "terminal" | "love" | "project"
+  kind: "code" | "terminal" | "love" | "project" | "steps"
 }
 
 export function useTaskFiles(lessonId: string, taskId: string | undefined) {
