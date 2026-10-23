@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   CircleCheck,
@@ -7,6 +7,7 @@ import {
   EyeOff,
   LoaderCircle,
   PlugZap,
+  RefreshCw,
   Save,
   Trash2,
 } from "lucide-react"
@@ -17,10 +18,55 @@ import {
   useProviderModels,
   useSettings,
   type MentorTestResult,
-  type ReasoningLevel,
+  type ReasoningOption,
 } from "../../lib/settings"
 
-const REASONING_ORDER: ReasoningLevel[] = ["off", "low", "medium", "high"]
+const FALLBACK_REASONING: ReasoningOption[] = [
+  { id: "off", label: REASONING_LABELS.off },
+  { id: "low", label: REASONING_LABELS.low },
+  { id: "medium", label: REASONING_LABELS.medium },
+  { id: "high", label: REASONING_LABELS.high },
+]
+
+function sourceLabel(source: string | undefined): string {
+  if (source === "opencode") return "OpenCode"
+  if (source === "api") return "API провайдера"
+  if (source === "cli") return "OpenCode CLI"
+  return "сохранённый список"
+}
+
+function catalogHint(
+  loading: boolean,
+  failed: boolean,
+  data: { error?: string; options: ReasoningOption[]; source?: string } | undefined,
+  hasKey: boolean,
+): string {
+  if (loading) return "Обновляем список моделей…"
+  if (failed) return "Список моделей недоступен — можно ввести модель вручную."
+  if (!data) return "Введите идентификатор модели."
+  if (data.error === "provider_key_missing") {
+    return "Сохраните API-ключ, чтобы загрузить модели провайдера. Показан сохранённый список."
+  }
+  if (data.error === "provider_url_missing") {
+    return "Укажите адрес сервиса и сохраните настройки, чтобы загрузить модели."
+  }
+  if (data.error === "provider_models_empty") {
+    return "Провайдер не вернул моделей — введите идентификатор вручную."
+  }
+  if (data.error?.startsWith("opencode_variants_unavailable")) {
+    return "OpenCode вернул только список моделей; варианты мышления сейчас недоступны."
+  }
+  if (data.error?.startsWith("opencode_models_unavailable")) {
+    return "OpenCode недоступен — модели не загрузились, можно ввести вручную."
+  }
+  if (data.error) {
+    return `${data.options.length} моделей · ${sourceLabel(data.source)}. Не удалось обновить: ${data.error}`
+  }
+  if (data.options.length > 0) {
+    return `${data.options.length} моделей · ${sourceLabel(data.source)}${hasKey ? "" : " · без ключа"}`
+  }
+  return hasKey ? "Провайдер не вернул моделей — введите вручную." : "Сохраните ключ или введите модель вручную."
+}
 
 export function NetworkTab() {
   const settings = useSettings()
@@ -28,11 +74,12 @@ export function NetworkTab() {
   const [initialized, setInitialized] = useState(false)
   const [provider, setProvider] = useState("opencode")
   const [model, setModel] = useState("")
-  const [reasoning, setReasoning] = useState<ReasoningLevel>("off")
+  const [reasoning, setReasoning] = useState("off")
   const [baseUrl, setBaseUrl] = useState("")
   const [keyInput, setKeyInput] = useState("")
   const [keyAction, setKeyAction] = useState<"keep" | "set" | "clear">("keep")
   const [showKey, setShowKey] = useState(false)
+  const [manualModel, setManualModel] = useState(false)
   const [savedAt, setSavedAt] = useState<number | null>(null)
   const savedTimer = useRef<number | null>(null)
   const [testing, setTesting] = useState(false)
@@ -51,6 +98,23 @@ export function NetworkTab() {
   const models = useProviderModels(provider)
   const info = settings.data?.catalog.find((entry) => entry.id === provider)
   const providerState = settings.data?.providers[provider]
+  const options = models.data?.options ?? []
+  const currentOption = options.find((option) => option.id === model)
+  const currentInList = Boolean(currentOption)
+  const reasoningOptions = useMemo(() => {
+    if (currentOption?.reasoning.length) return currentOption.reasoning
+    if (provider === "opencode") return [FALLBACK_REASONING[0]]
+    return FALLBACK_REASONING
+  }, [currentOption, provider])
+
+  useEffect(() => {
+    if (!initialized) return
+    if (models.isFetching || (!models.data && !models.isError)) return
+    if (!reasoningOptions.some((option) => option.id === reasoning)) {
+      setReasoning("off")
+    }
+  }, [reasoningOptions, reasoning, initialized, models.data, models.isError, models.isFetching])
+
   const dirty =
     Boolean(settings.data) &&
     initialized &&
@@ -60,6 +124,7 @@ export function NetworkTab() {
       baseUrl !== settings.data!.network.baseUrl ||
       keyAction !== "keep")
   const savedRecently = savedAt !== null && !dirty && Date.now() - savedAt < 6000
+  const selectValue = manualModel ? "__custom__" : model
 
   const save = useMutation({
     mutationFn: () =>
@@ -73,6 +138,7 @@ export function NetworkTab() {
     onSuccess: (data) => {
       queryClient.setQueryData(["settings"], data)
       void queryClient.invalidateQueries({ queryKey: ["settings-checks"] })
+      void queryClient.invalidateQueries({ queryKey: ["settings-models"] })
       setKeyInput("")
       setKeyAction("keep")
       setSavedAt(Date.now())
@@ -89,8 +155,26 @@ export function NetworkTab() {
     setKeyInput("")
     setKeyAction("keep")
     setShowKey(false)
+    setManualModel(false)
     setTestResult(null)
     setTestError(null)
+    setSavedAt(null)
+  }
+
+  function pickModel(value: string) {
+    if (value === "__custom__") {
+      setManualModel(true)
+      return
+    }
+    setManualModel(false)
+    if (!value) {
+      setModel("")
+      resetTest()
+      setSavedAt(null)
+      return
+    }
+    setModel(value)
+    resetTest()
     setSavedAt(null)
   }
 
@@ -176,59 +260,86 @@ export function NetworkTab() {
             <p>{info?.hint ?? "Выберите провайдера и модель, которая будет проверять уроки и отвечать на вопросы."}</p>
           </div>
 
-          <label className="settings-field">
+          <div className="settings-field">
             <span className="settings-field__label">Модель</span>
-            <input
-              className="settings-input"
-              value={model}
-              list={`provider-models-${provider}`}
-              placeholder={info?.defaultModel || "например, gpt-5.6-sol"}
-              onChange={(event) => {
-                setModel(event.target.value)
-                resetTest()
-                setSavedAt(null)
-              }}
-            />
-            <datalist id={`provider-models-${provider}`}>
-              {(models.data?.models ?? []).map((name) => (
-                <option value={name} key={name} />
-              ))}
-            </datalist>
+            <div className="model-row">
+              <select
+                id="network-model"
+                className="settings-input"
+                value={selectValue}
+                aria-label="Модель"
+                onChange={(event) => pickModel(event.target.value)}
+              >
+                <option value="">Выберите модель</option>
+                {options.map((option) => (
+                  <option value={option.id} key={option.id}>
+                    {option.label || option.id}
+                  </option>
+                ))}
+                {model && !currentInList && (
+                  <option value={model}>{model} · сохранённая</option>
+                )}
+                <option value="__custom__">Другая модель…</option>
+              </select>
+              <button
+                type="button"
+                className="model-refresh"
+                onClick={() => void models.refetch()}
+                disabled={models.isFetching}
+                aria-label="Обновить список моделей"
+                title="Обновить список моделей"
+              >
+                {models.isFetching ? (
+                  <LoaderCircle size={15} className="spin" aria-hidden />
+                ) : (
+                  <RefreshCw size={15} aria-hidden />
+                )}
+              </button>
+            </div>
+            {manualModel && (
+              <input
+                className="settings-input model-manual"
+                value={model}
+                placeholder={info?.defaultModel || "например, gpt-5.6-sol"}
+                aria-label="Своя модель"
+                onChange={(event) => {
+                  setModel(event.target.value)
+                  resetTest()
+                  setSavedAt(null)
+                }}
+              />
+            )}
             <span className="settings-field__hint">
-              {models.isFetching
-                ? "Загружаем список моделей…"
-                : models.data?.error
-                  ? "Список моделей недоступен — введите название вручную."
-                  : models.data?.models.length
-                    ? `${models.data.models.length} моделей доступно, можно ввести своё название.`
-                    : "Введите идентификатор модели."}
+              {catalogHint(models.isFetching, models.isError, models.data, Boolean(providerState?.hasKey || !info?.needsKey))}
             </span>
-          </label>
+          </div>
 
           <div className="settings-field">
             <span className="settings-field__label">Уровень размышлений</span>
             <div className="reasoning-options" role="radiogroup" aria-label="Уровень размышлений">
-              {REASONING_ORDER.map((level) => (
+              {reasoningOptions.map((option) => (
                 <button
                   type="button"
                   role="radio"
-                  aria-checked={reasoning === level}
-                  className={`reasoning-option${reasoning === level ? " reasoning-option--active" : ""}`}
-                  key={level}
+                  aria-checked={reasoning === option.id}
+                  className={`reasoning-option${reasoning === option.id ? " reasoning-option--active" : ""}`}
+                  key={option.id}
                   onClick={() => {
-                    setReasoning(level)
+                    setReasoning(option.id)
                     resetTest()
                     setSavedAt(null)
                   }}
                 >
-                  {REASONING_LABELS[level]}
+                  {option.label}
                 </button>
               ))}
             </div>
             <span className="settings-field__hint">
-              {provider === "opencode"
-                ? "OpenCode использует настройки выбранной модели; уровень применяется к прямым подключениям."
-                : "Чем выше уровень, тем дольше ответ и глубже разбор. «Выкл» — самый быстрый режим."}
+              {reasoningOptions.length <= 1
+                ? "У этой модели нет настраиваемых уровней мышления."
+                : provider === "opencode"
+                  ? "Это варианты выбранной модели OpenCode; «Выкл» — без явного варианта."
+                  : "Показываем только уровни, доступные выбранной модели. «Выкл» — самый быстрый режим."}
             </span>
           </div>
 

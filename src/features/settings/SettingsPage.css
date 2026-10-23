@@ -652,6 +652,42 @@
   border-color: var(--accent);
 }
 
+.model-row {
+  display: flex;
+  gap: 8px;
+}
+
+.model-row .settings-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.model-refresh {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  flex: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.model-refresh:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.model-refresh:disabled {
+  opacity: .5;
+  cursor: wait;
+}
+
+.model-manual {
+  margin-top: 2px;
+}
+
 .settings-field__hint {
   color: var(--muted);
   font-size: 11px;

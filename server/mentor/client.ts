@@ -28,18 +28,52 @@ async function getClient() {
   return clientPromise
 }
 
+export interface OpencodeModelInfo {
+  providerID: string
+  modelID: string
+  name: string
+  variants: string[]
+  enabled: boolean
+  status: string
+}
+
+/** Model catalog from the local OpenCode service (including the subscription). */
+export async function listOpencodeModels(): Promise<OpencodeModelInfo[]> {
+  const client = await getClient()
+  const result = await client.model.list()
+  return (result.data ?? []).map((model) => ({
+    providerID: String(model.providerID),
+    modelID: String(model.modelID),
+    name: String(model.name ?? model.modelID),
+    variants: (model.variants ?? []).map((variant) => String(variant.id)),
+    enabled: model.enabled !== false,
+    status: String(model.status ?? "active"),
+  }))
+}
+
 function parseModelRef(model: string): { providerID: string; id: string } {
   const [providerID, ...rest] = model.split("/")
   if (!providerID || rest.length === 0) return { providerID: "opencode-go", id: model || FALLBACK_MODEL.split("/")[1] }
   return { providerID, id: rest.join("/") }
 }
 
-async function createOpencodeSession(title: string, model: string, agent = DEFAULT_MENTOR_AGENT): Promise<string> {
+function directReasoning(value: string): ReasoningLevel {
+  return value === "low" || value === "medium" || value === "high" ? value : "off"
+}
+
+async function createOpencodeSession(
+  title: string,
+  model: string,
+  agent = DEFAULT_MENTOR_AGENT,
+  reasoning = "off",
+): Promise<string> {
   const client = await getClient()
+  const ref = parseModelRef(model)
+  const modelRef = reasoning && reasoning !== "off" ? { ...ref, variant: reasoning } : ref
   const session = await client.session.create({
     title,
     agent,
-    model: parseModelRef(model),
+    model: modelRef,
     location: { directory: process.cwd() },
   } as any)
   return session.id
@@ -51,7 +85,12 @@ export async function createMentorSession(
 ): Promise<string> {
   const settings = readSettings()
   if (settings.network.provider !== "opencode") return `direct-${randomUUID()}`
-  return createOpencodeSession(title, settings.network.model || FALLBACK_MODEL, agent)
+  return createOpencodeSession(
+    title,
+    settings.network.model || FALLBACK_MODEL,
+    agent,
+    settings.network.reasoning,
+  )
 }
 
 export async function deleteMentorSession(sessionId: string): Promise<void> {
@@ -77,7 +116,7 @@ export async function generateMentorReply(
     return generateDirect({
       provider,
       model,
-      reasoning,
+      reasoning: directReasoning(reasoning),
       apiKey: resolveApiKey(provider, settings) ?? "",
       baseUrl: provider === "custom" ? baseUrl : undefined,
       system: system?.trim() || DEFAULT_MENTOR_PROMPT,
@@ -109,7 +148,7 @@ export async function generateWithAgent(input: GenerateWithAgentInput): Promise<
     return generateDirect({
       provider,
       model,
-      reasoning,
+      reasoning: directReasoning(reasoning),
       apiKey: resolveApiKey(provider, settings) ?? "",
       baseUrl: provider === "custom" ? baseUrl : undefined,
       system: input.system?.trim() || DEFAULT_MENTOR_PROMPT,
@@ -122,6 +161,7 @@ export async function generateWithAgent(input: GenerateWithAgentInput): Promise<
     "Лестница обучения · конструктор",
     model || FALLBACK_MODEL,
     input.agent ?? CONSTRUCTOR_AGENT,
+    reasoning,
   )
   try {
     const client = await getClient()
@@ -138,7 +178,7 @@ export async function generateWithAgent(input: GenerateWithAgentInput): Promise<
 export interface MentorTestInput {
   provider?: string
   model?: string
-  reasoning?: ReasoningLevel
+  reasoning?: string
   apiKey?: string
   baseUrl?: string
 }
@@ -170,7 +210,12 @@ export async function testMentorConnection(input: MentorTestInput = {}): Promise
   const started = Date.now()
   try {
     if (provider === "opencode") {
-      const sessionId = await createOpencodeSession("Лестница обучения · проверка связи", model)
+      const sessionId = await createOpencodeSession(
+        "Лестница обучения · проверка связи",
+        model,
+        DEFAULT_MENTOR_AGENT,
+        reasoning,
+      )
       let reply = ""
       try {
         const result = await getClient().then((client) =>
@@ -188,7 +233,7 @@ export async function testMentorConnection(input: MentorTestInput = {}): Promise
     const reply = await generateDirect({
       provider,
       model,
-      reasoning,
+      reasoning: directReasoning(reasoning),
       apiKey,
       baseUrl,
       system: "Ты проверяешь соединение. Отвечай предельно коротко.",

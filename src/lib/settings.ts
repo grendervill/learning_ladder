@@ -24,7 +24,7 @@ export interface ClientProviderState {
 export interface NetworkSettings {
   provider: string
   model: string
-  reasoning: ReasoningLevel
+  reasoning: string
   baseUrl: string
 }
 
@@ -88,12 +88,33 @@ export function useMentorPrompt() {
   })
 }
 
+export interface ProviderModelsResponse {
+  provider: string
+  models: string[]
+  options: ModelOption[]
+  source: "opencode" | "api" | "preset" | "cli"
+  error?: string
+  fetchedAt: string
+}
+
+export interface ReasoningOption {
+  id: string
+  label: string
+}
+
+export interface ModelOption {
+  id: string
+  label: string
+  reasoning: ReasoningOption[]
+}
+
 export function useProviderModels(provider: string | undefined) {
   return useQuery({
     queryKey: ["settings-models", provider],
-    queryFn: () => fetchJson<{ provider: string; models: string[]; error?: string }>(
-      `/api/settings/models?provider=${encodeURIComponent(provider ?? "")}`,
-    ),
+    queryFn: () =>
+      fetchJson<ProviderModelsResponse>(
+        `/api/settings/models?provider=${encodeURIComponent(provider ?? "")}`,
+      ),
     enabled: Boolean(provider),
     staleTime: 60_000,
   })
@@ -117,7 +138,7 @@ export function saveMentorPrompt(mentorPrompt: string): Promise<SettingsResponse
 export function testNetwork(payload: {
   provider?: string
   model?: string
-  reasoning?: ReasoningLevel
+  reasoning?: string
   apiKey?: string
   baseUrl?: string
 }): Promise<MentorTestResult> {
@@ -127,9 +148,17 @@ export function testNetwork(payload: {
   })
 }
 
-export const REASONING_LABELS: Record<ReasoningLevel, string> = {
+export const REASONING_LABELS: Record<string, string> = {
   off: "Выкл",
+  none: "Выкл",
+  minimal: "Минимальный",
   low: "Низкий",
   medium: "Средний",
   high: "Высокий",
+  xhigh: "Очень высокий",
+  max: "Максимальный",
+}
+
+export function reasoningLabel(id: string): string {
+  return REASONING_LABELS[id] ?? id
 }

@@ -14,6 +14,7 @@ import {
 import { readMentorPrompt, mentorPromptPath, writeMentorPrompt } from "../mentor/prompt"
 import { constructorPromptPath, readConstructorPrompt } from "../courses/constructor-prompt"
 import { testMentorConnection, deleteMentorSession, type MentorTestInput } from "../mentor/client"
+import { discoverProviderModels } from "../mentor/models"
 
 type CheckStatus = "ok" | "warn" | "fail"
 
@@ -111,27 +112,18 @@ export function createSettingsRouter(getContext: () => AppContext): Router {
     res.json({ prompt: readMentorPrompt(), path: mentorPromptPath() })
   })
 
-  router.get("/settings/models", (req, res) => {
-    const provider = typeof req.query.provider === "string" ? req.query.provider : ""
-    const info = providerById(provider)
-    if (!info) {
-      res.status(400).json({ error: "unknown_provider" })
-      return
-    }
-    if (provider === "opencode") {
-      const result = runCommand("opencode", ["models"])
-      if (!result.ok) {
-        res.json({ provider, models: [], error: result.error })
+  router.get("/settings/models", async (req, res, next) => {
+    try {
+      const provider = typeof req.query.provider === "string" ? req.query.provider : ""
+      if (!providerById(provider)) {
+        res.status(400).json({ error: "unknown_provider" })
         return
       }
-      const models = result.raw
-        .split(/\r?\n/)
-        .map((line) => stripAnsi(line).trim())
-        .filter((line) => /^[\w.-]+\/[\w.#+-]+$/.test(line))
-      res.json({ provider, models })
-      return
+      const result = await discoverProviderModels(provider)
+      res.json(result)
+    } catch (error) {
+      next(error)
     }
-    res.json({ provider, models: info.models })
   })
 
   router.post("/settings/test-network", async (req, res, next) => {

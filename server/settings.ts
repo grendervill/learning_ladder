@@ -8,7 +8,7 @@ export const REASONING_LEVELS: ReasoningLevel[] = ["off", "low", "medium", "high
 export interface NetworkSettings {
   provider: string
   model: string
-  reasoning: ReasoningLevel
+  reasoning: string
   baseUrl: string
 }
 
@@ -120,8 +120,8 @@ export function providerById(id: string): ProviderInfo | undefined {
   return PROVIDERS.find((provider) => provider.id === id)
 }
 
-function normalizeReasoning(value: unknown): ReasoningLevel {
-  return REASONING_LEVELS.includes(value as ReasoningLevel) ? (value as ReasoningLevel) : "off"
+function normalizeReasoning(value: unknown): string {
+  return typeof value === "string" && value.trim() ? value.trim().slice(0, 64) : "off"
 }
 
 function normalizeSettings(raw: unknown): AppSettings {
