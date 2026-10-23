@@ -1,15 +1,22 @@
 import { useEffect, useMemo, useState } from "react"
-import { Link } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import {
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
+  FolderOpen,
+  LoaderCircle,
   Plus,
   Search,
   Sparkles,
 } from "lucide-react"
+import { fetchJson } from "../../lib/api"
 import { useCourses } from "../../lib/useCourses"
 import { useProject } from "../../lib/useProject"
+import {
+  hasNativeFolderPicker,
+  pickProjectFolder,
+} from "../../lib/projectPicker"
 import { plural } from "../../lib/plural"
 import { useCourseWizard } from "./CourseWizardProvider"
 import { CourseCard } from "./CourseCard"
@@ -22,6 +29,8 @@ export function CoursesHome() {
   const courses = useCourses(query, page)
   const project = useProject()
   const wizard = useCourseWizard()
+  const navigate = useNavigate()
+  const [changingProject, setChangingProject] = useState(false)
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -46,6 +55,27 @@ export function CoursesHome() {
   const goToPage = (next: number) => {
     setPage(next)
     window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
+  const changeProject = async () => {
+    if (!hasNativeFolderPicker()) {
+      navigate("/settings?tab=project")
+      return
+    }
+    const selected = await pickProjectFolder()
+    if (!selected) return
+    setChangingProject(true)
+    try {
+      await fetchJson("/api/project", {
+        method: "PUT",
+        body: JSON.stringify({ root: selected }),
+      })
+      window.location.reload()
+    } catch {
+      navigate("/settings?tab=project")
+    } finally {
+      setChangingProject(false)
+    }
   }
 
   return (
@@ -110,9 +140,19 @@ export function CoursesHome() {
             <code>{project.data?.root ?? "путь определяется…"}</code>
           </div>
           <div className="courses-empty__actions">
-            <Link to="/settings?tab=project" className="courses-button">
+            <button
+              type="button"
+              className="courses-button"
+              onClick={() => void changeProject()}
+              disabled={changingProject}
+            >
+              {changingProject ? (
+                <LoaderCircle size={15} className="spin" aria-hidden />
+              ) : (
+                <FolderOpen size={15} aria-hidden />
+              )}
               Изменить папку проекта
-            </Link>
+            </button>
             <button type="button" className="courses-button courses-button--primary" onClick={wizard.open}>
               <Plus size={15} aria-hidden /> Создать первый курс
             </button>

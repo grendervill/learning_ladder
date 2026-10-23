@@ -46,7 +46,7 @@ async function createOpencodeSession(title: string, model: string, agent = DEFAU
 }
 
 export async function createMentorSession(
-  title = "LearningLua · наставник",
+  title = "Лестница обучения · наставник",
   agent = DEFAULT_MENTOR_AGENT,
 ): Promise<string> {
   const settings = readSettings()
@@ -119,7 +119,7 @@ export async function generateWithAgent(input: GenerateWithAgentInput): Promise<
     })
   }
   const sessionId = await createOpencodeSession(
-    "LearningLua · конструктор",
+    "Лестница обучения · конструктор",
     model || FALLBACK_MODEL,
     input.agent ?? CONSTRUCTOR_AGENT,
   )
@@ -170,7 +170,7 @@ export async function testMentorConnection(input: MentorTestInput = {}): Promise
   const started = Date.now()
   try {
     if (provider === "opencode") {
-      const sessionId = await createOpencodeSession("LearningLua · проверка связи", model)
+      const sessionId = await createOpencodeSession("Лестница обучения · проверка связи", model)
       let reply = ""
       try {
         const result = await getClient().then((client) =>

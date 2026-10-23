@@ -119,7 +119,7 @@ fn ensure_server(root: &Path, slot: &Mutex<Option<Child>>) -> bool {
     let child = match spawn_server(root) {
         Ok(child) => child,
         Err(error) => {
-            eprintln!("LearningLua: не удалось запустить сервер: {error}");
+            eprintln!("Лестница обучения: не удалось запустить сервер: {error}");
             return false;
         }
     };
@@ -134,7 +134,7 @@ fn ensure_server(root: &Path, slot: &Mutex<Option<Child>>) -> bool {
         std::thread::sleep(Duration::from_millis(300));
     }
     eprintln!(
-        "LearningLua: сервер не ответил за 45 секунд. Смотрите data/tauri-server.log"
+        "Лестница обучения: сервер не ответил за 45 секунд. Смотрите data/tauri-server.log"
     );
     false
 }
@@ -143,6 +143,7 @@ fn main() {
     let root = project_root();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .manage(ServerProcess(Mutex::new(None)))
         .setup(move |app| {
             let url = if cfg!(debug_assertions) {
@@ -154,16 +155,16 @@ fn main() {
             };
 
             WebviewWindowBuilder::new(app, "main", WebviewUrl::External(url.parse().unwrap()))
-                .title("Лестница Lua")
+                .title("Лестница обучения")
                 .inner_size(1440.0, 900.0)
                 .min_inner_size(960.0, 640.0)
-                .center()
+                .position(80.0, 60.0)
                 .build()?;
 
             Ok(())
         })
         .build(tauri::generate_context!())
-        .expect("ошибка сборки приложения LearningLua")
+        .expect("ошибка сборки приложения «Лестница обучения»")
         .run(|app_handle, event| {
             if let RunEvent::Exit = event {
                 let state = app_handle.state::<ServerProcess>();

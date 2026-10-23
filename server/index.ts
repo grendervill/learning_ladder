@@ -106,7 +106,7 @@ if (isEntrypoint) {
   const port = Number(process.env.PORT ?? (process.env.NODE_ENV === "production" ? 4173 : DEFAULT_PORT))
   startServer(port)
     .then(() => {
-      console.log(`LearningLua server: http://127.0.0.1:${port}`)
+      console.log(`Лестница обучения: сервер http://127.0.0.1:${port}`)
     })
     .catch((error) => {
       console.error("Не удалось запустить сервер:", error)

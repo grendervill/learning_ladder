@@ -125,6 +125,17 @@ describe("mentor service", () => {
     const summary = await service.summarizeSession("mock", {
       startedAt: new Date().toISOString(),
       endedAt: new Date().toISOString(),
+      courses: [
+        {
+          id: "lua",
+          title: "Lua",
+          percent: 33,
+          passed: 1,
+          total: 3,
+          chapters: [{ title: "Основы", passed: 1, total: 3 }],
+          lessons: [{ title: "Hello", grade: 5, status: "passed" }],
+        },
+      ],
       chapters: [{ title: "Основы", passed: 1, total: 3 }],
       lessons: [{ title: "Hello", grade: 5, status: "passed" }],
       percent: 33,
@@ -132,6 +143,48 @@ describe("mentor service", () => {
     for (const heading of ["Общая оценка", "Что прошёл", "Процент от задуманного", "Сильные стороны", "Слабые стороны", "Напутствие", "Рекомендации"]) {
       expect(summary).toContain(heading)
     }
+  })
+
+  it("asks for per-course sections in the session summary", async () => {
+    let prompt = ""
+    const service = createMentorService({
+      generate: async (_sessionId, value) => {
+        prompt = value
+        return "## Общая оценка\nГотово."
+      },
+      createSession: async () => "session",
+      deleteSession: async () => {},
+    })
+    await service.summarizeSession("session", {
+      startedAt: new Date().toISOString(),
+      endedAt: new Date().toISOString(),
+      courses: [
+        {
+          id: "lua",
+          title: "Курс Lua",
+          percent: 100,
+          passed: 1,
+          total: 1,
+          chapters: [{ title: "Основы", passed: 1, total: 1 }],
+          lessons: [{ title: "Первый запуск", grade: 5, status: "passed" }],
+        },
+        {
+          id: "python",
+          title: "Курс Python",
+          percent: 50,
+          passed: 1,
+          total: 2,
+          chapters: [{ title: "Старт", passed: 1, total: 2 }],
+          lessons: [{ title: "Скрипт", grade: 4, status: "passed" }],
+        },
+      ],
+      chapters: [{ title: "Основы", passed: 1, total: 1 }],
+      lessons: [{ title: "Первый запуск", grade: 5, status: "passed" }],
+      percent: 75,
+    })
+    expect(prompt).toContain("подразделы по каждому курсу")
+    expect(prompt).toContain("Курс Lua")
+    expect(prompt).toContain("Курс Python")
   })
 })
 

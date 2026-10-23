@@ -2,16 +2,32 @@ import { useEffect, useState } from "react"
 import { useMutation } from "@tanstack/react-query"
 import { FolderOpen, LoaderCircle, Save, TriangleAlert } from "lucide-react"
 import { fetchJson } from "../../lib/api"
+import {
+  hasNativeFolderPicker,
+  pickProjectFolder,
+} from "../../lib/projectPicker"
 import { useProject } from "../../lib/useProject"
 
 export function ProjectTab({ onSwitched }: { onSwitched?: () => void }) {
   const project = useProject()
   const [root, setRoot] = useState("")
   const [saved, setSaved] = useState(false)
+  const [picking, setPicking] = useState(false)
+  const nativePicker = hasNativeFolderPicker()
 
   useEffect(() => {
     if (project.data?.root) setRoot(project.data.root)
   }, [project.data?.root])
+
+  const chooseFolder = async () => {
+    setPicking(true)
+    const selected = await pickProjectFolder()
+    setPicking(false)
+    if (selected) {
+      setRoot(selected)
+      setSaved(false)
+    }
+  }
 
   const switchProject = useMutation({
     mutationFn: (next: string) =>
@@ -77,8 +93,8 @@ export function ProjectTab({ onSwitched }: { onSwitched?: () => void }) {
           aria-label="Путь к папке проекта"
         />
         <span className="settings-field__hint">
-          Можно вставить абсолютный путь. Несуществующая папка будет создана с нужными
-          подкаталогами.
+          Можно вставить абсолютный путь или выбрать папку в приложении. Несуществующая
+          папка будет создана с нужными подкаталогами.
         </span>
       </label>
 
@@ -88,6 +104,21 @@ export function ProjectTab({ onSwitched }: { onSwitched?: () => void }) {
       </div>
 
       <div className="settings-actions">
+        {nativePicker && (
+          <button
+            type="button"
+            className="settings-button settings-button--ghost"
+            onClick={() => void chooseFolder()}
+            disabled={picking || switchProject.isPending}
+          >
+            {picking ? (
+              <LoaderCircle size={14} className="spin" aria-hidden />
+            ) : (
+              <FolderOpen size={14} aria-hidden />
+            )}
+            {picking ? "Открываем…" : "Выбрать папку"}
+          </button>
+        )}
         <button
           type="button"
           className="settings-button settings-button--primary"

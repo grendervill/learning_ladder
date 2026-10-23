@@ -2,7 +2,8 @@ import { mkdirSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { randomUUID } from "node:crypto"
 import type { AppContext } from "../context"
-import { accessFor } from "../access-data"
+import { accessForCourse } from "../access-data"
+import { courseView, coursesOf } from "../content/courses"
 import type { MentorService } from "../mentor/service"
 import type { SessionStats } from "../mentor/types"
 
@@ -84,51 +85,55 @@ function hasMeaningfulActivity(context: AppContext, sessionId: string): boolean 
 }
 
 export function buildSessionStats(context: AppContext, session: StudySession): SessionStats {
-  const course = context.getCourse()
-  const access = accessFor(context.db, course)
+  const snapshot = context.getCourse()
   const lessonRows = context.db
     .prepare("select lesson_id, status, best_grade from lesson_progress")
     .all() as Array<{ lesson_id: string; status: string; best_grade: number | null }>
   const lessonMap = new Map(lessonRows.map((row) => [row.lesson_id, row]))
-  const chapterRows = context.db
-    .prepare("select chapter_id, status from chapter_progress")
-    .all() as Array<{ chapter_id: string; status: string }>
-  const chapterMap = new Map(chapterRows.map((row) => [row.chapter_id, row.status]))
 
-  const chapters = course.chapters.map((chapter) => ({
-    title: chapter.title,
-    passed: chapter.lessonIds.filter((id) => access.lessons[id] === "passed").length,
-    total: chapter.lessonIds.length,
-  }))
-
-  const currentChapter =
-    course.chapters.find((chapter) => {
-      const allPassed = chapter.lessonIds.every((id) => access.lessons[id] === "passed")
-      return !allPassed || chapterMap.get(chapter.id) !== "passed"
-    }) ?? course.chapters[course.chapters.length - 1]
-
-  const required = currentChapter ? currentChapter.lessonIds.length + 1 : 0
-  const completed = currentChapter
-    ? currentChapter.lessonIds.filter((id) => access.lessons[id] === "passed").length +
-      (chapterMap.get(currentChapter.id) === "passed" ? 1 : 0)
-    : 0
-  const percent = required ? Math.round((completed / required) * 100) : 0
-
-  return {
-    startedAt: session.started_at,
-    endedAt: session.ended_at ?? new Date().toISOString(),
-    chapters,
-    lessons: course.chapters
+  const courses = coursesOf(snapshot).map((meta) => {
+    const view = courseView(snapshot, meta.id)
+    const access = accessForCourse(context.db, snapshot, meta.id)
+    const lessons = view.chapters
       .flatMap((chapter) => chapter.lessonIds)
       .map((id) => {
         const row = lessonMap.get(id)
         return {
-          title: course.lessons[id]?.title ?? id,
+          title: view.lessons[id]?.title ?? id,
           grade: row?.best_grade ?? null,
           status: access.lessons[id] ?? "locked",
         }
-      }),
-    percent,
+      })
+    const chapters = view.chapters.map((chapter) => ({
+      title: chapter.title,
+      passed: chapter.lessonIds.filter((id) => access.lessons[id] === "passed").length,
+      total: chapter.lessonIds.length,
+    }))
+    const total = lessons.length
+    const passed = lessons.filter((lesson) => lesson.status === "passed").length
+    return {
+      id: meta.id,
+      title: meta.title,
+      percent: total ? Math.round((passed / total) * 100) : 0,
+      passed,
+      total,
+      chapters,
+      lessons,
+    }
+  })
+
+  const lessons = courses.flatMap((course) => course.lessons)
+  const chapters = courses.flatMap((course) => course.chapters)
+  const total = lessons.length
+  const passed = lessons.filter((lesson) => lesson.status === "passed").length
+
+  return {
+    startedAt: session.started_at,
+    endedAt: session.ended_at ?? new Date().toISOString(),
+    courses,
+    chapters,
+    lessons,
+    percent: total ? Math.round((passed / total) * 100) : 0,
   }
 }
 
@@ -149,14 +154,23 @@ export async function acquireMentorSession(
 }
 
 function fallbackReport(stats: SessionStats): string {
+  const courseSections = stats.courses
+    .map((course) => {
+      const lessons = course.lessons
+        .filter((lesson) => lesson.status !== "locked")
+        .map((lesson) => `- ${lesson.title}: ${lesson.status}${lesson.grade ? `, ${lesson.grade}/5` : ""}`)
+        .join("\n")
+      return `### ${course.title}\n${lessons || "Пока только знакомство с материалами."}`
+    })
+    .join("\n\n")
   return `## Общая оценка
 Занятие завершено. Отчёт сформирован без ИИ: итоговая оценка будет видна в «Успеваемости».
 
 ## Что прошёл
-${stats.lessons.filter((lesson) => lesson.status !== "locked").map((lesson) => `- ${lesson.title}: ${lesson.status}${lesson.grade ? `, ${lesson.grade}/5` : ""}`).join("\n") || "Пока только знакомство с материалами."}
+${courseSections || "Пока только знакомство с материалами."}
 
 ## Процент от задуманного
-${stats.percent}% обязательных шагов текущей главы.
+${stats.courses.map((course) => `- ${course.title}: ${course.percent}% (${course.passed} из ${course.total})`).join("\n") || `${stats.percent}% программы.`}
 
 ## Сильные стороны
 - Ты открывал материалы и двигался по программе.
@@ -168,10 +182,10 @@ ${stats.percent}% обязательных шагов текущей главы.
 В следующий раз начни с одного маленького задания и доведи его до запуска.
 
 ## Рекомендации по текущей главе
-Вернись к теории текущей главы и проверь ключевые примеры в REPL.
+${stats.courses.map((course) => `- ${course.title}: вернись к текущей главе и проверь ключевые примеры.`).join("\n") || "Вернись к теории текущей главы."}
 
 ## Рекомендации на следующую главу
-Перед новым материалом повтори то, что уже проходил.`
+${stats.courses.map((course) => `- ${course.title}: перед новым материалом повтори пройденное.`).join("\n") || "Повтори то, что уже проходил."}`
 }
 
 export async function finalizeSession(

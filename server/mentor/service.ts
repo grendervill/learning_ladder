@@ -219,7 +219,8 @@ ${history || "(начало диалога)"}
 function buildSummaryPrompt(stats: SessionStats): string {
   return `Составь итог учебного занятия по статистике ниже. Пиши по-русски, тепло, но честно.
 Обязательные разделы: «Общая оценка», «Что прошёл», «Процент от задуманного», «Сильные стороны», «Слабые стороны», «Напутствие», «Рекомендации по текущей главе», «Рекомендации на следующую главу».
-Не выдумывай оценки и факты, которых нет в статистике. Не давай готовый код.
+Если в занятии несколько курсов, внутри разделов «Что прошёл», «Сильные стороны», «Слабые стороны» и оба раздела рекомендаций сделай подразделы по каждому курсу. Не смешивай курсы и не выдумывай оценки и факты, которых нет в статистике.
+Не давай готовый код.
 
 Статистика:
 ${JSON.stringify(stats, null, 2)}`
@@ -276,14 +277,26 @@ function mockReview(request: MentorReviewRequest): MentorReviewResult {
 }
 
 function mockSummary(stats: SessionStats): string {
+  const sections = stats.courses
+    .map(
+      (course) =>
+        `### ${course.title}\n${course.lessons
+          .filter((lesson) => lesson.status !== "locked")
+          .map((lesson) => `- ${lesson.title}: ${lesson.status}`)
+          .join("\n") || "Пока только чтение материалов."}`,
+    )
+    .join("\n\n")
+  const percents = stats.courses
+    .map((course) => `- ${course.title}: ${course.percent}% (${course.passed} из ${course.total})`)
+    .join("\n")
   return `## Общая оценка
-Хорошее занятие. Ты продвинулся по текущей главе и сохранил рабочий темп.
+Хорошее занятие. Ты продвинулся по курсам и сохранил рабочий темп.
 
 ## Что прошёл
-${stats.lessons.filter((lesson) => lesson.status !== "locked").map((lesson) => `- ${lesson.title}: ${lesson.status}`).join("\n") || "Пока только чтение материалов."}
+${sections || "Пока только чтение материалов."}
 
 ## Процент от задуманного
-${stats.percent}% обязательных шагов текущей главы.
+${percents || `${stats.percent}% программы.`}
 
 ## Сильные стороны
 - Ты сам запускаешь код и проверяешь результат.
@@ -296,10 +309,10 @@ ${stats.percent}% обязательных шагов текущей главы.
 Не спеши сдавать. Сначала сформулируй, что именно должен делать код.
 
 ## Рекомендации по текущей главе
-Перечитай раздел про local и проверь типы в REPL.
+${stats.courses.map((course) => `- ${course.title}: перечитай текущую главу и проверь ключевые примеры.`).join("\n") || "Перечитай текущую главу."}
 
 ## Рекомендации на следующую главу
-Повтори таблицы и функции перед следующим шагом.`
+${stats.courses.map((course) => `- ${course.title}: повтори пройденное перед новым материалом.`).join("\n") || "Повтори пройденное."}`
 }
 
 function mockClassification(snapshot: CourseSnapshot, unassigned: string[]): MentorClassification {

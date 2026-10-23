@@ -98,9 +98,20 @@ export interface MentorClassification {
   reason: string
 }
 
+export interface SessionCourseStats {
+  id: string
+  title: string
+  percent: number
+  passed: number
+  total: number
+  chapters: Array<{ title: string; passed: number; total: number }>
+  lessons: Array<{ title: string; grade: number | null; status: string }>
+}
+
 export interface SessionStats {
   startedAt: string
   endedAt: string
+  courses: SessionCourseStats[]
   chapters: Array<{ title: string; passed: number; total: number }>
   lessons: Array<{ title: string; grade: number | null; status: string }>
   percent: number

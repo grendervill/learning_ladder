@@ -1,6 +1,8 @@
 import { useMemo } from "react"
+import { Link, useSearchParams } from "react-router-dom"
 import { ChartNoAxesColumn, CircleCheck, GraduationCap, Sparkles } from "lucide-react"
 import { useCourse } from "../../lib/useCourse"
+import { useCourses } from "../../lib/useCourses"
 import { useProgress } from "../../lib/useProgress"
 import { plural } from "../../lib/plural"
 import { AccessError, PageSkeleton } from "../course/CourseStates"
@@ -9,25 +11,70 @@ import { ReportList } from "./ReportList"
 import "./PerformancePage.css"
 
 export function PerformancePage() {
-  const course = useCourse()
-  const progress = useProgress()
+  const coursesQuery = useCourses("", 1)
+  const [params, setParams] = useSearchParams()
+  const courseList = coursesQuery.data?.courses ?? []
+  const requested = params.get("course")
+  const selected = courseList.find((course) => course.id === requested) ?? courseList[0]
+  const courseId = selected?.id
+  const course = useCourse(courseId)
+  const progress = useProgress(courseId)
 
   const summary = useMemo(() => {
     if (!progress.data) return { passed: 0, total: 0, percent: 0 }
     const total = Object.keys(progress.data.access.lessons).length
-    const passed = Object.values(progress.data.access.lessons).filter((status) => status === "passed").length
+    const passed = Object.values(progress.data.access.lessons).filter(
+      (status) => status === "passed",
+    ).length
     return { passed, total, percent: total ? Math.round((passed / total) * 100) : 0 }
   }, [progress.data])
 
-  if (course.isLoading || progress.isLoading) return <PageSkeleton label="Собираем успеваемость" />
+  if (coursesQuery.isLoading) return <PageSkeleton label="Собираем успеваемость" />
+  if (coursesQuery.isError) {
+    return <AccessError onRetry={() => void coursesQuery.refetch()} />
+  }
+  if (courseList.length === 0) {
+    return (
+      <div className="performance-page">
+        <header className="performance-head">
+          <div>
+            <span className="section-kicker">
+              <ChartNoAxesColumn size={13} aria-hidden /> успеваемость
+            </span>
+            <h1>Пока нечего считать</h1>
+            <p>Оценки появятся, когда в проекте будет первый курс.</p>
+          </div>
+        </header>
+        <section className="performance-empty-state">
+          <h2>Курсов пока нет</h2>
+          <p>Создайте курс на главной или смените папку проекта.</p>
+          <Link to="/">К списку курсов</Link>
+        </section>
+      </div>
+    )
+  }
+  if (!selected || course.isLoading || progress.isLoading) {
+    return <PageSkeleton label="Собираем успеваемость" />
+  }
   if (course.isError || progress.isError || !course.data || !progress.data) {
-    return <AccessError onRetry={() => { void course.refetch(); void progress.refetch() }} />
+    return (
+      <AccessError
+        onRetry={() => {
+          void course.refetch()
+          void progress.refetch()
+        }}
+      />
+    )
   }
 
-  const grades = Object.values(progress.data.lessons).filter((lesson) => lesson.bestGrade !== null)
+  const grades = Object.values(progress.data.lessons).filter(
+    (lesson) => lesson.bestGrade !== null,
+  )
   const average = grades.length
     ? (grades.reduce((sum, lesson) => sum + (lesson.bestGrade ?? 0), 0) / grades.length).toFixed(1)
     : "—"
+  const modeLabel =
+    selected.mode === "programming" ? "код" : selected.mode === "math" ? "шаги" : "разбор"
 
   return (
     <div className="performance-page">
@@ -43,10 +90,33 @@ export function PerformancePage() {
           <div className="performance-orbit__ring" />
           <div className="performance-orbit__moon">
             <strong>{summary.percent}%</strong>
-            <small>{summary.passed} / {summary.total}</small>
+            <small>
+              {summary.passed} / {summary.total}
+            </small>
           </div>
         </div>
       </header>
+
+      <div className="performance-course">
+        <label htmlFor="performance-course">смотреть курс</label>
+        <select
+          id="performance-course"
+          value={selected.id}
+          onChange={(event) => {
+            setParams({ course: event.target.value }, { replace: true })
+          }}
+        >
+          {courseList.map((item) => (
+            <option value={item.id} key={item.id}>
+              {item.title}
+            </option>
+          ))}
+        </select>
+        <span>
+          {modeLabel} · {courseList.length}{" "}
+          {plural(courseList.length, ["курс", "курса", "курсов"])} в проекте
+        </span>
+      </div>
 
       <section className="performance-stats">
         <div>
@@ -63,7 +133,13 @@ export function PerformancePage() {
         </div>
         <div>
           <span>Глав закрыто</span>
-          <strong>{Object.values(progress.data.chapters).filter((chapter) => chapter.status === "passed").length}</strong>
+          <strong>
+            {
+              Object.values(progress.data.chapters).filter(
+                (chapter) => chapter.status === "passed",
+              ).length
+            }
+          </strong>
         </div>
       </section>
 
@@ -75,7 +151,10 @@ export function PerformancePage() {
             </span>
             <h2>По главам и урокам</h2>
           </div>
-          <span>{summary.passed} из {summary.total} {plural(summary.total, ["урока", "уроков", "уроков"])} закрыто</span>
+          <span>
+            {summary.passed} из {summary.total}{" "}
+            {plural(summary.total, ["урока", "уроков", "уроков"])} закрыто
+          </span>
         </div>
         <GradeTable course={course.data} progress={progress.data} />
       </section>
@@ -99,7 +178,8 @@ export function PerformancePage() {
                 <summary>
                   <span className="attempt-grade">{attempt.grade}</span>
                   <div className="attempt-summary">
-                    <b>{attempt.scopeId}</b>
+                    <b>{attempt.itemTitle || attempt.scopeId}</b>
+                    <small className="attempt-course">{attempt.courseTitle}</small>
                     <p>{attempt.feedback?.summary ?? "Разбор сохранён."}</p>
                   </div>
                   <time>{new Date(attempt.submittedAt).toLocaleString("ru-RU")}</time>

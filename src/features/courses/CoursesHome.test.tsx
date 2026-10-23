@@ -95,10 +95,7 @@ describe("CoursesHome", () => {
     renderWithProviders(<CoursesHome />)
     expect(await screen.findByText("Пока ни одного курса")).toBeInTheDocument()
     expect(screen.getByText("/tmp/ladder-project")).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Изменить папку проекта" })).toHaveAttribute(
-      "href",
-      "/settings?tab=project",
-    )
+    expect(screen.getByRole("button", { name: "Изменить папку проекта" })).toBeInTheDocument()
   })
 
   it("paginates twenty-five cards per page", async () => {
