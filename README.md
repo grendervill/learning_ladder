@@ -6,6 +6,7 @@ OpenCode или API выбранного провайдера; собствен�
 у приложения нет.
 
 [![desktop](https://github.com/grendervill/learning_ladder/actions/workflows/desktop.yml/badge.svg)](https://github.com/grendervill/learning_ladder/actions/workflows/desktop.yml)
+[![Release](https://img.shields.io/github/v/release/grendervill/learning_ladder)](https://github.com/grendervill/learning_ladder/releases/latest)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 
 ## Что это
@@ -82,6 +83,9 @@ npm run tauri:build
 language server остаются внешними — приложение показывает их состояние
 в проверках.
 
+Готовые установщики — в
+[Releases](https://github.com/grendervill/learning_ladder/releases/latest).
+
 Сборки не подписаны: macOS Gatekeeper и Windows SmartScreen могут показать
 предупреждение.
 
@@ -118,7 +122,8 @@ Workflow [`.github/workflows/desktop.yml`](.github/workflows/desktop.yml)
 - `x86_64-pc-windows-msvc` и `aarch64-pc-windows-msvc`;
 - `x86_64-unknown-linux-gnu` и `aarch64-unknown-linux-gnu`.
 
-Готовые установщики публикуются как артефакты workflow.
+Готовые установщики публикуются как артефакты workflow и в
+[Releases](https://github.com/grendervill/learning_ladder/releases/latest).
 
 ## Как устроено обучение
 
