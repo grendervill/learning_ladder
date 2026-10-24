@@ -10,8 +10,24 @@ permissions:
   contents: read
 
 jobs:
+  test:
+    name: test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "26"
+          cache: npm
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
   build:
     name: ${{ matrix.target }}
+    needs: test
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -58,7 +74,6 @@ jobs:
             javascriptcoregtk-4.1-dev
 
       - run: npm ci
-      - run: npm run typecheck
       - run: npm run tauri:build -- --target ${{ matrix.target }}
 
       - uses: actions/upload-artifact@v4

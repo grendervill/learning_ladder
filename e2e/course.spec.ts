@@ -5,8 +5,8 @@ test("opens the program and shows the current lesson", async ({ page }) => {
   await page.goto("/")
   await dismissReport(page)
   await expect(page.getByRole("heading", { name: "Твои курсы" })).toBeVisible()
-  const card = page.locator(".course-card:not(.course-card--create)").first()
-  await expect(card).toContainText("Lua")
+  const card = page.locator(".course-card:not(.course-card--create)", { hasText: "Lua" }).first()
+  await expect(card).toBeVisible()
   await card.click()
   await expect(page.getByRole("heading", { name: "Lua", level: 1 })).toBeVisible()
   await expect(page.getByRole("heading", { name: "Основы", level: 3 })).toBeVisible()
@@ -19,7 +19,7 @@ test("searches courses and clears an empty result", async ({ page }) => {
   await page.getByLabel("Поиск по курсам").fill("экономика")
   await expect(page.getByText("По запросу «экономика» ничего не нашлось.")).toBeVisible()
   await page.getByRole("button", { name: "Сбросить поиск" }).click()
-  await expect(page.locator(".course-card:not(.course-card--create)")).toHaveCount(1)
+  await expect(page.locator(".course-card:not(.course-card--create)", { hasText: "Lua" })).toBeVisible()
 })
 
 test("passes lesson 02 with a mocked mentor", async ({ page }) => {

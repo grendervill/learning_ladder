@@ -1,6 +1,6 @@
 [package]
 name = "learninglua"
-version = "0.1.0"
+version = "0.1.1"
 description = "Локальный учебный кабинет «Лестница обучения»"
 authors = ["Лестница обучения"]
 edition = "2021"
