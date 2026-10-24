@@ -6,13 +6,33 @@ import { renderWithProviders } from "../../test/render"
 beforeEach(() => {
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => ({
-      ok: true,
-      json: async () => ({
-        answer: "Попробуй проверить `type(42)` в REPL и объясни результат.",
-        conversationId: "chat-1",
-      }),
-    })),
+    vi.fn(async (input: any) => {
+      const url = String(input)
+      if (url === "/api/attachments") {
+        return {
+          ok: true,
+          json: async () => ({
+            attachments: [
+              {
+                id: "attachment-1",
+                name: "notes.txt",
+                mime: "text/plain",
+                size: 12,
+                kind: "text",
+                createdAt: "2026-10-24T10:00:00.000Z",
+              },
+            ],
+          }),
+        }
+      }
+      return {
+        ok: true,
+        json: async () => ({
+          answer: "Попробуй проверить `type(42)` в REPL и объясни результат.",
+          conversationId: "chat-1",
+        }),
+      }
+    }),
   )
 })
 
@@ -29,6 +49,11 @@ describe("MentorDrawer", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "Сообщение наставнику" }), {
       target: { value: "Почему type выдаёт string?" },
     })
+    fireEvent.change(screen.getByLabelText("Выбрать файлы"), {
+      target: { files: [new File(["Hello notes"], "notes.txt", { type: "text/plain" })] },
+    })
+    expect(await screen.findByText("notes.txt")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("checkbox", { name: /Сохранить/ }))
     fireEvent.click(screen.getByRole("button", { name: "Отправить" }))
 
     expect(await screen.findByText(/Попробуй проверить/)).toBeInTheDocument()
@@ -38,5 +63,12 @@ describe("MentorDrawer", () => {
         expect.objectContaining({ method: "POST" }),
       ),
     )
+    const ask = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls.find((call) =>
+      String(call[0]).includes("/mentor/ask"),
+    )
+    expect(JSON.parse(String(ask?.[1]?.body))).toMatchObject({
+      attachmentIds: ["attachment-1"],
+      keepAttachments: true,
+    })
   })
 })

@@ -54,10 +54,10 @@ export const LOCAL_FALLBACK_QUESTIONS: ClarifyQuestion[] = [
   },
 ]
 
-export function clarifyCourse(topic: string): Promise<ClarifyResponse> {
+export function clarifyCourse(topic: string, attachmentIds: string[] = []): Promise<ClarifyResponse> {
   return fetchJson<ClarifyResponse>("/api/courses/clarify", {
     method: "POST",
-    body: JSON.stringify({ topic }),
+    body: JSON.stringify({ topic, ...(attachmentIds.length ? { attachmentIds } : {}) }),
   })
 }
 
@@ -65,6 +65,8 @@ export function startCourseGeneration(input: {
   topic: string
   answers: ClarifyAnswer[]
   volume: Volume
+  attachmentIds?: string[]
+  keepAttachments?: boolean
 }): Promise<{ jobId: string }> {
   return fetchJson<{ jobId: string }>("/api/courses/generate", {
     method: "POST",

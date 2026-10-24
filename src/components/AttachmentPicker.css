@@ -1,0 +1,199 @@
+.attachment-picker {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+  background: var(--surface);
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.attachment-picker.is-dragging {
+  border-color: var(--accent);
+  background: var(--accent-faint);
+}
+
+.attachment-picker--compact {
+  padding: 11px;
+  border-style: solid;
+  border-radius: 10px;
+  background: var(--surface-strong);
+}
+
+.attachment-picker__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.attachment-picker__copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.attachment-picker__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.attachment-picker__title svg {
+  color: var(--accent);
+}
+
+.attachment-picker__hint {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  line-height: 1.45;
+}
+
+.attachment-picker__add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 7px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 10.5px;
+  cursor: pointer;
+}
+
+.attachment-picker__add:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.attachment-picker__add:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.attachment-picker__list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attachment-picker__list li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface-strong);
+}
+
+.attachment-picker__file-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  background: var(--accent-faint);
+  color: var(--accent);
+}
+
+.attachment-picker__file-name {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: var(--text-soft);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-picker__file-size {
+  flex: none;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.attachment-picker__list button {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.attachment-picker__list button:hover:not(:disabled) {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.attachment-picker__keep {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--text-soft);
+  cursor: pointer;
+}
+
+.attachment-picker__keep input {
+  margin-top: 2px;
+  accent-color: var(--accent);
+  flex: none;
+}
+
+.attachment-picker__keep b {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.attachment-picker__keep small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 9.5px;
+  line-height: 1.4;
+}
+
+.attachment-picker__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  color: var(--danger);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+.attachment-picker__error svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+.attachment-picker--compact .attachment-picker__title {
+  font-size: 11px;
+}
+
+.attachment-picker--compact .attachment-picker__add {
+  padding: 6px 8px;
+  font-size: 10px;
+}
+
+.attachment-picker--compact .attachment-picker__keep b {
+  font-size: 10.5px;
+}

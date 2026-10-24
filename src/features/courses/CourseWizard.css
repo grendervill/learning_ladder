@@ -144,6 +144,10 @@
   margin: -4px 0 18px;
 }
 
+.wizard-attachments {
+  margin: 0 0 18px;
+}
+
 .wizard-example {
   padding: 5px 9px;
   border: 1px solid var(--line);

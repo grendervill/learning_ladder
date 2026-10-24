@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
 import {
@@ -11,6 +11,8 @@ import {
   TriangleAlert,
   X,
 } from "lucide-react"
+import { AttachmentPicker } from "../../components/AttachmentPicker"
+import { deleteAttachment, type UploadedAttachment } from "../../lib/attachments"
 import {
   cancelCourseJob,
   clarifyCourse,
@@ -56,6 +58,9 @@ export function CourseWizard({ open, onClose }: { open: boolean; onClose: () => 
   const [selected, setSelected] = useState<Record<string, string[]>>({})
   const [custom, setCustom] = useState<Record<string, string>>({})
   const [volume, setVolume] = useState<Volume>("medium")
+  const [attachments, setAttachments] = useState<UploadedAttachment[]>([])
+  const [keepAttachments, setKeepAttachments] = useState(false)
+  const [attachmentsBusy, setAttachmentsBusy] = useState(false)
   const [starting, setStarting] = useState(false)
   const [jobId, setJobId] = useState<string | null>(null)
   const [job, setJob] = useState<CourseJob | null>(null)
@@ -72,6 +77,9 @@ export function CourseWizard({ open, onClose }: { open: boolean; onClose: () => 
     setSelected({})
     setCustom({})
     setVolume("medium")
+    setAttachments([])
+    setKeepAttachments(false)
+    setAttachmentsBusy(false)
     setStarting(false)
     setJobId(null)
     setJob(null)
@@ -82,14 +90,23 @@ export function CourseWizard({ open, onClose }: { open: boolean; onClose: () => 
   const terminal = job ? TERMINAL.includes(job.status) : false
   const canClose = step !== "generate" || Boolean(error) || terminal
 
+  const closeWizard = useCallback(() => {
+    if (!job?.courseId) {
+      for (const attachment of attachments) {
+        void deleteAttachment(attachment.id)
+      }
+    }
+    onClose()
+  }, [attachments, job?.courseId, onClose])
+
   useEffect(() => {
     if (!open) return
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && canClose) onClose()
+      if (event.key === "Escape" && canClose) closeWizard()
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [open, canClose, onClose])
+  }, [open, canClose, closeWizard])
 
   useEffect(() => {
     if (!open || step !== "generate" || !jobId) return
@@ -147,7 +164,10 @@ export function CourseWizard({ open, onClose }: { open: boolean; onClose: () => 
     setQuestions([])
     setFallback(false)
     try {
-      const data = await clarifyCourse(value)
+      const data = await clarifyCourse(
+        value,
+        attachments.map((attachment) => attachment.id),
+      )
       if (data.questions.length > 0) {
         setQuestions(data.questions)
         setFallback(Boolean(data.fallback))
@@ -174,6 +194,12 @@ export function CourseWizard({ open, onClose }: { open: boolean; onClose: () => 
         topic: topic.trim(),
         answers,
         volume,
+        ...(attachments.length
+          ? {
+              attachmentIds: attachments.map((attachment) => attachment.id),
+              keepAttachments,
+            }
+          : {}),
       })
       setJobId(result.jobId)
     } catch (cause) {
@@ -223,12 +249,12 @@ export function CourseWizard({ open, onClose }: { open: boolean; onClose: () => 
 
   function openCourse() {
     if (!job?.courseId) return
-    onClose()
+    closeWizard()
     navigate(`/courses/${job.courseId}`)
   }
 
   function goHome() {
-    onClose()
+    closeWizard()
     navigate("/")
   }
 
@@ -237,7 +263,7 @@ export function CourseWizard({ open, onClose }: { open: boolean; onClose: () => 
       className="wizard-overlay"
       role="presentation"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget && canClose) onClose()
+        if (event.target === event.currentTarget && canClose) closeWizard()
       }}
     >
       <section
@@ -257,7 +283,7 @@ export function CourseWizard({ open, onClose }: { open: boolean; onClose: () => 
           <button
             type="button"
             className="wizard-close"
-            onClick={onClose}
+            onClick={closeWizard}
             disabled={!canClose}
             aria-label="Закрыть мастер"
             title={canClose ? "Закрыть" : "Дождитесь сборки или отмените её"}
@@ -304,6 +330,17 @@ export function CourseWizard({ open, onClose }: { open: boolean; onClose: () => 
                 </button>
               ))}
             </div>
+            <div className="wizard-attachments">
+              <AttachmentPicker
+                attachments={attachments}
+                onChange={setAttachments}
+                keep={keepAttachments}
+                onKeepChange={setKeepAttachments}
+                onBusyChange={setAttachmentsBusy}
+                label="Материалы для курса"
+                keepLabel="Сохранить исходники в курсе"
+              />
+            </div>
             <p className="wizard-hint">
               Чем конкретнее запрос, тем точнее курс. Если не знаете, с чего начать,
               напишите тему — конструктор предложит варианты.
@@ -312,7 +349,7 @@ export function CourseWizard({ open, onClose }: { open: boolean; onClose: () => 
               <button
                 type="button"
                 className="settings-button settings-button--primary"
-                disabled={!topic.trim()}
+                disabled={!topic.trim() || attachmentsBusy}
                 onClick={() => void goClarify()}
               >
                 Продолжить <ArrowRight size={15} aria-hidden />
@@ -404,6 +441,7 @@ export function CourseWizard({ open, onClose }: { open: boolean; onClose: () => 
                   <button
                     type="button"
                     className="settings-button settings-button--primary"
+                    disabled={attachmentsBusy}
                     onClick={() => void generate()}
                   >
                     <Sparkles size={14} aria-hidden /> Собрать курс

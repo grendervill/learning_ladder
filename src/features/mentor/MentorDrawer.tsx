@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import {
   CircleAlert,
   GraduationCap,
@@ -7,6 +7,8 @@ import {
   Sparkles,
   X,
 } from "lucide-react"
+import { AttachmentPicker } from "../../components/AttachmentPicker"
+import { deleteAttachment, type UploadedAttachment } from "../../lib/attachments"
 import { fetchJson } from "../../lib/api"
 import { Markdown } from "../../lib/markdown"
 import "./MentorDrawer.css"
@@ -14,6 +16,7 @@ import "./MentorDrawer.css"
 interface ChatMessage {
   role: "user" | "assistant"
   content: string
+  attachments?: UploadedAttachment[]
 }
 
 export function MentorDrawer({
@@ -32,18 +35,30 @@ export function MentorDrawer({
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [conversationId, setConversationId] = useState<string | null>(null)
+  const [attachments, setAttachments] = useState<UploadedAttachment[]>([])
+  const [keepAttachments, setKeepAttachments] = useState(false)
+  const [attachmentsBusy, setAttachmentsBusy] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
+
+  const close = useCallback(() => {
+    if (!sending) {
+      for (const attachment of attachments) {
+        void deleteAttachment(attachment.id)
+      }
+    }
+    onClose()
+  }, [attachments, onClose, sending])
 
   useEffect(() => {
     if (!open) return
     inputRef.current?.focus()
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose()
+      if (event.key === "Escape") close()
     }
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
-  }, [open, onClose])
+  }, [open, close])
 
   useEffect(() => {
     const list = listRef.current
@@ -57,28 +72,43 @@ export function MentorDrawer({
 
   const send = async () => {
     const question = input.trim()
-    if (!question || sending) return
+    const outgoing = attachments
+    if ((!question && outgoing.length === 0) || sending || attachmentsBusy) return
+    const prompt = question || "Посмотри приложенные файлы и помоги разобраться."
     setInput("")
     setError(null)
-    setMessages((current) => [...current, { role: "user", content: question }])
+    setMessages((current) => [
+      ...current,
+      { role: "user", content: prompt, ...(outgoing.length ? { attachments: outgoing } : {}) },
+    ])
     setSending(true)
     try {
       const response = await fetchJson<{ answer: string; conversationId: string }>("/api/mentor/ask", {
         method: "POST",
         body: JSON.stringify({
-          question,
+          question: prompt,
           lessonId,
           taskId,
           conversationId: conversationId ?? undefined,
+          ...(outgoing.length
+            ? {
+                attachmentIds: outgoing.map((attachment) => attachment.id),
+                keepAttachments,
+              }
+            : {}),
         }),
       })
       setConversationId(response.conversationId)
       setMessages((current) => [...current, { role: "assistant", content: response.answer }])
+      setAttachments([])
+      setKeepAttachments(false)
     } catch (cause) {
       setError(
         cause instanceof Error && cause.message === "lesson_locked"
           ? "Этот урок ещё закрыт."
-          : "Наставник сейчас недоступен. Попробуй ещё раз.",
+          : cause instanceof Error && cause.message === "model_without_vision"
+            ? "Выбранная модель не принимает изображения. Выберите модель с поддержкой vision."
+            : "Наставник сейчас недоступен. Попробуй ещё раз.",
       )
     } finally {
       setSending(false)
@@ -88,7 +118,7 @@ export function MentorDrawer({
   if (!open) return null
 
   return (
-    <div className="mentor-overlay" role="presentation" onClick={onClose}>
+    <div className="mentor-overlay" role="presentation" onClick={close}>
       <aside
         className="mentor-drawer"
         role="dialog"
@@ -106,7 +136,7 @@ export function MentorDrawer({
               <small>подсказки без готового кода</small>
             </div>
           </div>
-          <button type="button" onClick={onClose} aria-label="Закрыть наставника">
+          <button type="button" onClick={close} aria-label="Закрыть наставника">
             <X size={15} aria-hidden />
           </button>
         </header>
@@ -142,7 +172,16 @@ export function MentorDrawer({
               {message.role === "assistant" ? (
                 <Markdown markdown={message.content} />
               ) : (
-                <p>{message.content}</p>
+                <div>
+                  <p>{message.content}</p>
+                  {message.attachments && message.attachments.length > 0 && (
+                    <ul className="mentor-message__files">
+                      {message.attachments.map((attachment) => (
+                        <li key={attachment.id}>{attachment.name}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               )}
             </div>
           ))}
@@ -156,6 +195,20 @@ export function MentorDrawer({
               <CircleAlert size={12} aria-hidden /> {error}
             </div>
           )}
+        </div>
+
+        <div className="mentor-attachments">
+          <AttachmentPicker
+            attachments={attachments}
+            onChange={setAttachments}
+            keep={keepAttachments}
+            onKeepChange={setKeepAttachments}
+            onBusyChange={setAttachmentsBusy}
+            disabled={sending}
+            compact
+            label="Файлы к вопросу"
+            keepLabel="Сохранить в проекте"
+          />
         </div>
 
         <form
@@ -173,7 +226,11 @@ export function MentorDrawer({
             aria-label="Сообщение наставнику"
             disabled={sending}
           />
-          <button type="submit" disabled={!input.trim() || sending} aria-label="Отправить">
+          <button
+            type="submit"
+            disabled={(!input.trim() && attachments.length === 0) || sending || attachmentsBusy}
+            aria-label="Отправить"
+          >
             {sending ? <LoaderCircle size={13} className="spin" aria-hidden /> : <Send size={13} aria-hidden />}
           </button>
         </form>
