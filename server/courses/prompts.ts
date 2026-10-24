@@ -1,8 +1,10 @@
 export const DEFAULT_CONSTRUCTOR_PROMPT = `Ты — методист и конструктор курсов в локальном учебном кабинете «Лестница обучения».
 
 Твоя задача — превратить запрос ученика в цельный курс и красивую карточку, которую
-приятно открыть. Ты пишешь по-русски, спокойно и конкретно. Ты не выдумываешь факты:
-если данных мало, принимаешь разумные решения и честно называешь допущения в тексте.
+приятно открыть. Пользователь может приложить изображения, PDF и документы: используй
+их как источник фактов, примеров и структуры. Ты пишешь по-русски, спокойно и конкретно.
+Ты не выдумываешь факты: если данных мало, принимаешь разумные решения и честно
+называешь допущения в тексте.
 
 Карточка курса:
 - название — 2–6 слов, без точки;
@@ -45,12 +47,18 @@ function formatAnswers(answers: ClarifyAnswer[]): string {
     .join("\n")
 }
 
-export function clarifyPrompt(topic: string): string {
-  return `Пользователь хочет учиться по теме: "${topic}".
+function materialsBlock(materials?: string): string {
+  const text = materials?.trim()
+  return text ? `\n\nМатериалы пользователя:\n${text}\n` : ""
+}
 
+export function clarifyPrompt(topic: string, materials?: string): string {
+  return `Пользователь хочет учиться по теме: "${topic}".
+${materialsBlock(materials)}
 Сформулируй 2–3 уточняющих вопроса, которые помогут собрать курс именно под него.
-Не спрашивай про объём — приложение спросит отдельно. Вопросы должны быть
-конкретными, с вариантами, а не общими пожеланиями.
+Если приложены материалы, опирайся на них: спроси о том, что в них важно, непонятно
+или требует углубления. Не спрашивай про объём — приложение спросит отдельно.
+Вопросы должны быть конкретными, с вариантами, а не общими пожеланиями.
 
 Верни только JSON:
 {"questions":[{"id":"goal","prompt":"...","type":"single|multiple","options":["...","..."]}]}
@@ -59,12 +67,16 @@ export function clarifyPrompt(topic: string): string {
 multiple — несколько. Пиши по-русски.`
 }
 
-export function outlinePrompt(input: GenerateCourseInput): string {
+export interface OutlinePromptInput extends GenerateCourseInput {
+  materialsText?: string
+}
+
+export function outlinePrompt(input: OutlinePromptInput): string {
   const limits = VOLUME_LIMITS[input.volume]
   return `Запрос ученика: "${input.topic}"
 Уточнения:
 ${formatAnswers(input.answers)}
-
+${materialsBlock(input.materialsText)}
 Объём: ${input.volume} — от ${limits.min} до ${limits.max} уроков.
 
 Собери карточку и структуру курса. Верни только JSON:
@@ -85,7 +97,8 @@ ${formatAnswers(input.answers)}
 - для general и math runtime "none"; для programming выбери язык;
 - глав 1–4, в каждой 1–8 уроков; всего уроков — в указанном объёме;
 - mentorPrompt — отдельные правила наставника этого курса: объяснять, задавать
-  вопросы, проверять процесс и не давать готовых решений;
+  вопросы, проверять процесс, учитывать приложенные файлы и не давать готовых решений;
+- используй приложенные материалы как источник фактов и примеров;
 - никаких готовых решений и лишних полей.`
 }
 
@@ -100,6 +113,7 @@ export interface LessonPromptInput {
   mentorPrompt: string
   index: number
   total: number
+  materialsText?: string
 }
 
 export function lessonPrompt(input: LessonPromptInput): string {
@@ -141,6 +155,7 @@ export function lessonPrompt(input: LessonPromptInput): string {
 Режим: ${mode}. Среда: ${settings.runtime} (${settings.fileExtension}).
 Наставник курса: ${input.mentorPrompt}
 Тема ученика: ${input.topic}
+${materialsBlock(input.materialsText)}
 Глава: ${chapterTitle}${chapterDescription ? ` — ${chapterDescription}` : ""}
 Урок ${index} из ${total}: ${lessonTitle}
 
@@ -158,6 +173,8 @@ export function lessonPrompt(input: LessonPromptInput): string {
 - не давай готовых ответов и полных решений;
 - квиз строго 50/50: 2 тестовых вопроса (single, 3–4 варианта, correct и
   explanation) и 2 письменных (text, referenceAnswer и criteria);
-- ${mode === "general" ? "практика — этот же квиз, tasks должен быть пустым" : mode === "math" ? "практика — одна задача kind=steps с шагами и финальным ответом" : "практика — одна код-задача kind=code с запуском"}.`
+- ${mode === "general" ? "практика — этот же квиз, tasks должен быть пустым" : mode === "math" ? "практика — одна задача kind=steps с шагами и финальным ответом" : "практика — одна код-задача kind=code с запуском"};
+- используй приложенные материалы как источник фактов, примеров и формулировок;
+- не выдумывай факты, которых нет в материалах и общей теме.`
 }
 

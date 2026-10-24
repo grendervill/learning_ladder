@@ -1,4 +1,5 @@
 import { z } from "zod"
+import type { ModelAttachment } from "../attachments/types"
 import { parseQuiz } from "../content/quiz"
 import type { CourseSnapshot, Quiz } from "../content/types"
 import {
@@ -207,6 +208,10 @@ function buildAskPrompt(context: MentorContext, question: string): string {
 Задание: ${context.taskTitle ?? "не указано"}
 Код:
 ${code || "(нет)"}
+Материалы пользователя:
+${context.materials?.trim() || "(нет)"}
+Если вопрос относится к приложенным файлам, используй их содержимое как часть
+контекста и не отказывайся от него.
 Последний запуск:
 ${formatRun(context.lastRun)}
 История диалога:
@@ -345,7 +350,12 @@ export interface GenerateQuizInput {
   tasks: Array<{ title: string; kind: string }>
 }
 
-export type MentorGenerate = (sessionId: string, prompt: string, system?: string) => Promise<string>
+export type MentorGenerate = (
+  sessionId: string,
+  prompt: string,
+  system?: string,
+  attachments?: ModelAttachment[],
+) => Promise<string>
 export type MentorCreateSession = () => Promise<string>
 export type MentorDeleteSession = (sessionId: string) => Promise<void>
 
@@ -401,13 +411,23 @@ export function createMentorService(options: MentorServiceOptions = {}): MentorS
     async askMentor(sessionId, context, question) {
       if (mock) return "Подумай, что именно делает эта строка. Что вернёт type(42)? Попробуй проверить в REPL."
       const prompt = buildAskPrompt(context, question)
-      let answer = await generate(sessionId, prompt, context.mentorPrompt)
+      const attachments = context.imageAttachments?.length ? context.imageAttachments : undefined
+      let answer = attachments
+        ? await generate(sessionId, prompt, context.mentorPrompt, attachments)
+        : await generate(sessionId, prompt, context.mentorPrompt)
       if (containsReadyCode(answer)) {
-        answer = await generate(
-          sessionId,
-          `${prompt}\n\nУбери фенсед-блоки с готовым кодом. Оставь только подсказку и вопрос.`,
-          context.mentorPrompt,
-        )
+        answer = attachments
+          ? await generate(
+              sessionId,
+              `${prompt}\n\nУбери фенсед-блоки с готовым кодом. Оставь только подсказку и вопрос.`,
+              context.mentorPrompt,
+              attachments,
+            )
+          : await generate(
+              sessionId,
+              `${prompt}\n\nУбери фенсед-блоки с готовым кодом. Оставь только подсказку и вопрос.`,
+              context.mentorPrompt,
+            )
       }
       return stripReadyCode(answer)
     },

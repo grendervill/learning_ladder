@@ -95,6 +95,7 @@ CREATE TABLE IF NOT EXISTS mentor_messages (
   session_id TEXT NOT NULL,
   role TEXT NOT NULL,
   content_md TEXT NOT NULL,
+  attachments_json TEXT,
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_mentor_messages_session ON mentor_messages(session_id, created_at);

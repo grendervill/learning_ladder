@@ -1,3 +1,5 @@
+import type { ModelAttachment } from "../attachments/types"
+
 export interface MentorFile {
   name: string
   content: string
@@ -85,6 +87,8 @@ export interface MentorContext {
   lastRun?: MentorRun | null
   history?: Array<{ role: "user" | "assistant"; content: string }>
   mentorPrompt?: string
+  materials?: string
+  imageAttachments?: ModelAttachment[]
 }
 
 export interface MentorClassification {

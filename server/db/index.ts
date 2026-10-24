@@ -20,6 +20,12 @@ export function openDatabase(path: string): DatabaseSync {
 
 export function migrate(db: DatabaseSync): void {
   db.exec(SCHEMA_SQL)
+  const mentorColumns = db
+    .prepare("pragma table_info(mentor_messages)")
+    .all() as Array<{ name: string }>
+  if (!mentorColumns.some((column) => column.name === "attachments_json")) {
+    db.exec("alter table mentor_messages add column attachments_json text")
+  }
 }
 
 const DEFAULT_DB_PATH = process.env.LEARNINGLUA_DB ?? "data/learninglua.db"

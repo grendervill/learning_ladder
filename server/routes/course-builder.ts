@@ -1,9 +1,15 @@
 import { Router } from "express"
+import type { AppContext } from "../context"
+import { imageAttachments, formatMaterials } from "../attachments/prompt"
+import { readAttachments } from "../attachments/store"
+import { supportsImages } from "../attachments/model-support"
+import { AttachmentError } from "../attachments/types"
 import type { CourseGenerator } from "../courses/generator"
 import {
   FALLBACK_CLARIFY,
   VOLUME_LIMITS,
   type ClarifyAnswer,
+  type CourseMaterials,
   type GenerateCourseInput,
   type Volume,
 } from "../courses/schema"
@@ -26,24 +32,71 @@ function parseAnswers(value: unknown): ClarifyAnswer[] {
     }))
 }
 
-export function createCourseBuilderRouter(generator: CourseGenerator): Router {
+function parseAttachmentIds(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((id): id is string => typeof id === "string").slice(0, 5)
+}
+
+async function materialsFor(
+  context: AppContext,
+  body: Record<string, any> | undefined,
+): Promise<CourseMaterials | undefined> {
+  const ids = parseAttachmentIds(body?.attachmentIds)
+  if (ids.length === 0) return undefined
+  const root = context.root ?? process.cwd()
+  const attachments = readAttachments(root, ids)
+  if (attachments.length !== ids.length) {
+    throw new AttachmentError("attachment_not_found", "Часть приложенных файлов не найдена.")
+  }
+  const images = imageAttachments(attachments)
+  if (images.length > 0 && !(await supportsImages())) {
+    throw new AttachmentError(
+      "model_without_vision",
+      "Выбранная модель не принимает изображения. Выберите модель с поддержкой vision или приложите PDF/документ.",
+    )
+  }
+  return {
+    text: formatMaterials(attachments),
+    images,
+    attachments,
+    keep: Boolean(body?.keepAttachments),
+  }
+}
+
+function attachmentError(res: import("express").Response, error: unknown): boolean {
+  if (!(error instanceof AttachmentError)) return false
+  res.status(400).json({ error: error.code, message: error.message })
+  return true
+}
+
+export function createCourseBuilderRouter(
+  generator: CourseGenerator,
+  getContext?: () => AppContext,
+): Router {
   const router = Router()
 
-  router.post("/courses/clarify", async (req, res) => {
+  router.post("/courses/clarify", async (req, res, next) => {
     const topic = typeof req.body?.topic === "string" ? req.body.topic.trim() : ""
     if (!topic) {
       res.status(400).json({ error: "topic_required" })
       return
     }
     try {
-      const questions = await generator.clarify(topic)
+      const context = getContext?.()
+      const materials = context ? await materialsFor(context, req.body) : undefined
+      const questions = await generator.clarify(topic, materials)
       res.json({ questions })
-    } catch {
+    } catch (error) {
+      if (attachmentError(res, error)) return
+      if (error instanceof Error && error.message === "model_without_vision") {
+        res.status(400).json({ error: "model_without_vision", message: error.message })
+        return
+      }
       res.json({ ...FALLBACK_CLARIFY, fallback: true })
     }
   })
 
-  router.post("/courses/generate", (req, res) => {
+  router.post("/courses/generate", async (req, res, next) => {
     const topic = typeof req.body?.topic === "string" ? req.body.topic.trim() : ""
     if (!topic) {
       res.status(400).json({ error: "topic_required" })
@@ -54,13 +107,21 @@ export function createCourseBuilderRouter(generator: CourseGenerator): Router {
       res.status(400).json({ error: "invalid_volume" })
       return
     }
-    const input: GenerateCourseInput = {
-      topic,
-      answers: parseAnswers(req.body?.answers),
-      volume: volume as Volume,
+    try {
+      const context = getContext?.()
+      const materials = context ? await materialsFor(context, req.body) : undefined
+      const input: GenerateCourseInput = {
+        topic,
+        answers: parseAnswers(req.body?.answers),
+        volume: volume as Volume,
+        ...(materials ? { materials } : {}),
+      }
+      const jobId = generator.start(input)
+      res.status(202).json({ jobId })
+    } catch (error) {
+      if (attachmentError(res, error)) return
+      next(error)
     }
-    const jobId = generator.start(input)
-    res.status(202).json({ jobId })
   })
 
   router.get("/courses/jobs/:id", (req, res) => {

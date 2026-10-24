@@ -1,4 +1,5 @@
 import { z } from "zod"
+import type { ModelAttachment, StoredAttachment } from "../attachments/types"
 import type { Quiz } from "../content/types"
 
 export const VOLUME_LIMITS = {
@@ -14,10 +15,18 @@ export interface ClarifyAnswer {
   answer: string
 }
 
+export interface CourseMaterials {
+  text: string
+  images: ModelAttachment[]
+  attachments: StoredAttachment[]
+  keep: boolean
+}
+
 export interface GenerateCourseInput {
   topic: string
   answers: ClarifyAnswer[]
   volume: Volume
+  materials?: CourseMaterials
 }
 
 export const clarifyQuestionSchema = z.object({

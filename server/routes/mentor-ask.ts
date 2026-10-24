@@ -3,6 +3,13 @@ import { Router } from "express"
 import type { AppContext } from "../context"
 import { accessForLesson } from "../access-data"
 import { isLessonAccessible } from "../access"
+import {
+  deleteAttachments,
+  keepMentorAttachments,
+  readAttachments,
+} from "../attachments/store"
+import { formatMaterials, imageAttachments } from "../attachments/prompt"
+import { supportsImages } from "../attachments/model-support"
 import type { MentorService } from "../mentor/service"
 import type { MentorContext, MentorRun } from "../mentor/types"
 import type { TaskFile } from "../content/types"
@@ -46,6 +53,28 @@ export function createMentorAskRouter(
       return
     }
 
+    const attachmentIds = Array.isArray(req.body?.attachmentIds)
+      ? req.body.attachmentIds
+          .filter((id: unknown): id is string => typeof id === "string")
+          .slice(0, 5)
+      : []
+    const keepAttachments = Boolean(req.body?.keepAttachments)
+    const root = context.root ?? process.cwd()
+    const attachments = readAttachments(root, attachmentIds)
+    if (attachmentIds.length > 0 && attachments.length !== attachmentIds.length) {
+      res.status(400).json({ error: "attachment_not_found" })
+      return
+    }
+    const images = imageAttachments(attachments)
+    if (images.length > 0 && !(await supportsImages())) {
+      res.status(400).json({
+        error: "model_without_vision",
+        message:
+          "Выбранная модель не принимает изображения. Выберите модель с поддержкой vision или приложите PDF/документ.",
+      })
+      return
+    }
+
     let mentorContext: MentorContext = {}
     if (lessonId) {
       const lesson = course.lessons[lessonId]
@@ -73,6 +102,9 @@ export function createMentorAskRouter(
       }
     }
 
+    mentorContext.materials = formatMaterials(attachments)
+    mentorContext.imageAttachments = images
+
     const requestedConversation = typeof req.body?.conversationId === "string" ? req.body.conversationId : null
     const conversationId = requestedConversation ?? randomUUID()
     if (requestedConversation) {
@@ -98,12 +130,38 @@ export function createMentorAskRouter(
     } finally {
       await acquired.release()
     }
-    recordActivity(context, { kind: "mentor_ask", lessonId, taskId, meta: { question } })
+    if (attachments.length > 0) {
+      try {
+        if (keepAttachments) {
+          keepMentorAttachments(root, conversationId, attachmentIds)
+        } else {
+          deleteAttachments(root, attachmentIds)
+        }
+      } catch (error) {
+        console.error("[attachments] не удалось сохранить или удалить файлы наставника", error)
+      }
+    }
+    recordActivity(context, {
+      kind: "mentor_ask",
+      lessonId,
+      taskId,
+      meta: {
+        question,
+        ...(attachments.length ? { attachments: attachments.map((attachment) => attachment.name) } : {}),
+      },
+    })
 
     const now = new Date().toISOString()
+    const attachmentsJson = attachments.length
+      ? JSON.stringify(
+          attachments.map(({ name, mime, kind }) => ({ name, mime, kind })),
+        )
+      : null
     context.db
-      .prepare("insert into mentor_messages (session_id, role, content_md, created_at) values (?, 'user', ?, ?)")
-      .run(conversationId, question, now)
+      .prepare(
+        "insert into mentor_messages (session_id, role, content_md, attachments_json, created_at) values (?, 'user', ?, ?, ?)",
+      )
+      .run(conversationId, question, attachmentsJson, now)
     context.db
       .prepare("insert into mentor_messages (session_id, role, content_md, created_at) values (?, 'assistant', ?, ?)")
       .run(conversationId, answer, now)

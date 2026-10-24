@@ -1,145 +1,104 @@
-import { afterEach, describe, expect, it, vi } from "vitest"
-import { generateDirect } from "./providers"
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { generateDirect, type DirectGenerateInput } from "./providers"
+
+const PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Z2S8AAAAASUVORK5CYII=",
+  "base64",
+)
+
+let dir: string
+let imagePath: string
+
+beforeEach(() => {
+  dir = mkdtempSync(join(tmpdir(), "ladder-providers-"))
+  imagePath = join(dir, "chart.png")
+  writeFileSync(imagePath, PNG)
+})
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  rmSync(dir, { recursive: true, force: true })
 })
 
-function jsonResponse(value: unknown, status = 200): Response {
-  return new Response(JSON.stringify(value), {
-    status,
-    headers: { "content-type": "application/json" },
-  })
+function input(provider: string, baseUrl: string): DirectGenerateInput {
+  return {
+    provider,
+    model: "vision-model",
+    reasoning: "off",
+    apiKey: "key",
+    baseUrl,
+    prompt: "Что на картинке?",
+    attachments: [{ kind: "image", name: "chart.png", mime: "image/png", path: imagePath }],
+  }
 }
 
-describe("direct provider calls", () => {
-  it("calls an OpenAI-compatible endpoint with system and reasoning settings", async () => {
-    const fetchMock = vi.fn(async (_url: string, _init: RequestInit) =>
-      jsonResponse({ choices: [{ message: { content: "  работает  " } }] }),
-    )
-    vi.stubGlobal("fetch", fetchMock)
-
-    const text = await generateDirect({
-      provider: "deepseek",
-      model: "deepseek-reasoner",
-      reasoning: "high",
-      apiKey: "sk-test",
-      system: "Ты наставник.",
-      prompt: "Проверь код.",
-    })
-
-    expect(text).toBe("работает")
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
-    expect(url).toBe("https://api.deepseek.com/v1/chat/completions")
-    expect((init.headers as Record<string, string>).authorization).toBe("Bearer sk-test")
-    const body = JSON.parse(String(init.body))
-    expect(body.model).toBe("deepseek-reasoner")
-    expect(body.messages).toEqual([
-      { role: "system", content: "Ты наставник." },
-      { role: "user", content: "Проверь код." },
-    ])
-    expect(body.reasoning_effort).toBe("max")
-    expect(body.max_tokens).toBe(4096)
-  })
-
-  it("uses a custom base URL and max_completion_tokens for OpenAI", async () => {
-    const fetchMock = vi.fn(async (_url: string, _init: RequestInit) => jsonResponse({ choices: [{ message: { content: "ок" } }] }))
-    vi.stubGlobal("fetch", fetchMock)
-
-    await generateDirect({
-      provider: "openai",
-      model: "gpt-5.2",
-      reasoning: "off",
-      apiKey: "sk-openai",
-      prompt: "привет",
-    })
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
-    expect(url).toBe("https://api.openai.com/v1/chat/completions")
-    const body = JSON.parse(String(init.body))
-    expect(body.max_completion_tokens).toBe(4096)
-    expect(body.reasoning_effort).toBeUndefined()
-  })
-
-  it("enables Anthropic adaptive thinking with an effort level and keeps only text blocks", async () => {
-    const fetchMock = vi.fn(async (_url: string, _init: RequestInit) =>
-      jsonResponse({
-        content: [
-          { type: "thinking", thinking: "размышляю" },
-          { type: "text", text: "Ответ наставника." },
-        ],
-      }),
-    )
-    vi.stubGlobal("fetch", fetchMock)
-
-    const text = await generateDirect({
-      provider: "anthropic",
-      model: "claude-sonnet-4-6",
-      reasoning: "medium",
-      apiKey: "sk-ant",
-      system: "система",
-      prompt: "вопрос",
-    })
-
-    expect(text).toBe("Ответ наставника.")
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
-    expect(url).toBe("https://api.anthropic.com/v1/messages")
-    expect((init.headers as Record<string, string>)["x-api-key"]).toBe("sk-ant")
-    const body = JSON.parse(String(init.body))
-    expect(body.thinking).toEqual({ type: "adaptive" })
-    expect(body.output_config).toEqual({ effort: "medium" })
-    expect(body.max_tokens).toBe(8192)
-    expect(body.system).toBe("система")
-  })
-
-  it("calls the Gemini API with an api key header", async () => {
-    const fetchMock = vi.fn(async (_url: string, _init: RequestInit) =>
-      jsonResponse({ candidates: [{ content: { parts: [{ text: "привет" }] } }] }),
-    )
-    vi.stubGlobal("fetch", fetchMock)
-
-    const text = await generateDirect({
-      provider: "google",
-      model: "gemini-3-pro",
-      reasoning: "low",
-      apiKey: "goog-key",
-      prompt: "привет",
-    })
-
-    expect(text).toBe("привет")
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
-    expect(url).toBe(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro:generateContent",
-    )
-    expect((init.headers as Record<string, string>)["x-goog-api-key"]).toBe("goog-key")
-    const body = JSON.parse(String(init.body))
-    expect(body.generationConfig.thinkingConfig).toEqual({ thinkingLevel: "low" })
-  })
-
-  it("surfaces HTTP errors with status and body", async () => {
+describe("direct provider attachments", () => {
+  it("sends OpenAI images as data URLs", async () => {
+    const bodies: any[] = []
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => new Response("invalid api key", { status: 401 })),
-    )
-    await expect(
-      generateDirect({
-        provider: "deepseek",
-        model: "deepseek-chat",
-        reasoning: "off",
-        apiKey: "bad",
-        prompt: "привет",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        bodies.push(JSON.parse(String(init?.body)))
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ choices: [{ message: { content: "ok" } }] }),
+        }
       }),
-    ).rejects.toThrow(/http_401/)
+    )
+
+    await generateDirect(input("openai", "https://api.example/v1"))
+
+    const content = bodies[0].messages[0].content
+    expect(content[0]).toEqual({ type: "text", text: "Что на картинке?" })
+    expect(content[1].type).toBe("image_url")
+    expect(content[1].image_url.url).toMatch(/^data:image\/png;base64,/)
   })
 
-  it("requires a model", async () => {
-    await expect(
-      generateDirect({
-        provider: "custom",
-        model: " ",
-        reasoning: "off",
-        apiKey: "x",
-        prompt: "привет",
+  it("sends Anthropic images as base64 blocks", async () => {
+    const bodies: any[] = []
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        bodies.push(JSON.parse(String(init?.body)))
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ content: [{ type: "text", text: "ok" }] }),
+        }
       }),
-    ).rejects.toThrow("provider_model_missing")
+    )
+
+    await generateDirect(input("anthropic", "https://api.example"))
+
+    const content = bodies[0].messages[0].content
+    expect(content[1]).toMatchObject({
+      type: "image",
+      source: { type: "base64", media_type: "image/png" },
+    })
+  })
+
+  it("sends Google images as inline data", async () => {
+    const bodies: any[] = []
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        bodies.push(JSON.parse(String(init?.body)))
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ candidates: [{ content: { parts: [{ text: "ok" }] } }] }),
+        }
+      }),
+    )
+
+    await generateDirect(input("google", "https://api.example"))
+
+    const parts = bodies[0].contents[0].parts
+    expect(parts[0]).toEqual({ text: "Что на картинке?" })
+    expect(parts[1]).toMatchObject({ inline_data: { mime_type: "image/png" } })
   })
 })

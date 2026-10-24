@@ -1,9 +1,10 @@
-import { mkdtempSync, rmSync } from "node:fs"
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import request from "supertest"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { createApp } from "../app"
+import { createAttachment } from "../attachments/store"
 import { migrate, openDatabase } from "../db"
 import { DEFAULT_LUA_COURSE_META } from "../content/defaults"
 import type { CourseSnapshot } from "../content/types"
@@ -65,6 +66,11 @@ const job: CourseJob = {
   createdAt: "2026-10-22T10:00:00.000Z",
 }
 
+const PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Z2S8AAAAASUVORK5CYII=",
+  "base64",
+)
+
 function fakeBuilder(overrides: Partial<CourseGenerator> = {}): CourseGenerator {
   return {
     clarify: async () => questions,
@@ -109,6 +115,90 @@ describe("course builder api", () => {
       volume: "short",
       answers: [{ question: "Что важно?", answer: "Основы" }],
     })
+  })
+
+  it("passes attachment materials and the keep choice to the generator", async () => {
+    const attachment = await createAttachment(dir, {
+      originalname: "notes.md",
+      mimetype: "text/markdown",
+      size: 16,
+      buffer: Buffer.from("Hello material"),
+    })
+    let clarifyMaterials: any
+    let startInput: any
+    const builder = fakeBuilder({
+      clarify: async (_topic, materials) => {
+        clarifyMaterials = materials
+        return questions
+      },
+      start: (input) => {
+        startInput = input
+        return "job-1"
+      },
+    })
+    const app = makeApp(builder)
+
+    const clarified = await request(app)
+      .post("/api/courses/clarify")
+      .send({ topic: "экономика", attachmentIds: [attachment.id], keepAttachments: true })
+    expect(clarified.status).toBe(200)
+    expect(clarifyMaterials.text).toContain("Hello material")
+    expect(clarifyMaterials.keep).toBe(true)
+
+    const generated = await request(app)
+      .post("/api/courses/generate")
+      .send({
+        topic: "экономика",
+        volume: "short",
+        answers: [],
+        attachmentIds: [attachment.id],
+        keepAttachments: true,
+      })
+    expect(generated.status).toBe(202)
+    expect(startInput.materials.text).toContain("Hello material")
+    expect(startInput.materials.attachments).toHaveLength(1)
+    expect(startInput.materials.keep).toBe(true)
+  })
+
+  it("rejects missing attachments", async () => {
+    const response = await request(makeApp(fakeBuilder()))
+      .post("/api/courses/generate")
+      .send({ topic: "экономика", volume: "short", attachmentIds: ["missing-id"] })
+    expect(response.status).toBe(400)
+    expect(response.body.error).toBe("attachment_not_found")
+  })
+
+  it("rejects images for a text-only model", async () => {
+    const previous = process.env.LEARNINGLUA_SETTINGS_PATH
+    process.env.LEARNINGLUA_SETTINGS_PATH = join(dir, "data", "settings.json")
+    mkdirSync(join(dir, "data"), { recursive: true })
+    writeFileSync(
+      process.env.LEARNINGLUA_SETTINGS_PATH,
+      JSON.stringify({
+        network: { provider: "deepseek", model: "deepseek-flash", reasoning: "off", baseUrl: "" },
+        providers: {},
+      }),
+    )
+    try {
+      const attachment = await createAttachment(dir, {
+        originalname: "chart.png",
+        mimetype: "image/png",
+        size: PNG.length,
+        buffer: PNG,
+      })
+      const response = await request(makeApp(fakeBuilder()))
+        .post("/api/courses/generate")
+        .send({
+          topic: "экономика",
+          volume: "short",
+          attachmentIds: [attachment.id],
+        })
+      expect(response.status).toBe(400)
+      expect(response.body.error).toBe("model_without_vision")
+    } finally {
+      if (previous === undefined) delete process.env.LEARNINGLUA_SETTINGS_PATH
+      else process.env.LEARNINGLUA_SETTINGS_PATH = previous
+    }
   })
 
   it("rejects an empty topic and an unknown volume", async () => {

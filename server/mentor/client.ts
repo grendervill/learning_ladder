@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto"
+import { pathToFileURL } from "node:url"
 import { OpenCode } from "@opencode/client"
 import { Service } from "@opencode/client/service"
+import type { ModelAttachment } from "../attachments/types"
 import { DEFAULT_MENTOR_PROMPT } from "../content/defaults"
 import {
   KEEP_KEY,
@@ -107,10 +109,48 @@ function opencodePrompt(prompt: string, system?: string): string {
   return `Правила наставника этого курса:\n${rules}\n\nЗапрос приложения:\n${prompt}`
 }
 
+async function opencodeReply(
+  sessionId: string,
+  prompt: string,
+  attachments: ModelAttachment[] | undefined,
+  signal: AbortSignal,
+): Promise<string> {
+  const client = await getClient()
+  if (!attachments?.length) {
+    const result = await client.session.generate(
+      { sessionID: sessionId, prompt },
+      { signal },
+    )
+    return result.text
+  }
+  await client.session.prompt(
+    {
+      sessionID: sessionId,
+      text: prompt,
+      files: attachments.map((attachment) => ({
+        uri: pathToFileURL(attachment.path).href,
+        name: attachment.name,
+      })),
+    },
+    { signal },
+  )
+  await client.session.wait({ sessionID: sessionId }, { signal })
+  const messages = await client.session.context({ sessionID: sessionId }, { signal })
+  const assistant = [...messages].reverse().find((message) => message.type === "assistant")
+  const text = (assistant?.content ?? [])
+    .filter((part) => part.type === "text")
+    .map((part) => part.text)
+    .join("\n")
+    .trim()
+  if (!text) throw new Error("provider_empty_response")
+  return text
+}
+
 export async function generateMentorReply(
   sessionId: string,
   prompt: string,
   system?: string,
+  attachments?: ModelAttachment[],
 ): Promise<string> {
   const settings = readSettings()
   const { provider, model, reasoning, baseUrl } = settings.network
@@ -124,14 +164,15 @@ export async function generateMentorReply(
       system: system?.trim() || DEFAULT_MENTOR_PROMPT,
       prompt,
       maxTokens: 4096,
+      ...(attachments?.length ? { attachments } : {}),
     })
   }
-  const client = await getClient()
-  const result = await client.session.generate(
-    { sessionID: sessionId, prompt: opencodePrompt(prompt, system) },
-    { signal: AbortSignal.timeout(180_000) },
+  return opencodeReply(
+    sessionId,
+    opencodePrompt(prompt, system),
+    attachments,
+    AbortSignal.timeout(180_000),
   )
-  return result.text
 }
 
 export interface GenerateWithAgentInput {
@@ -139,6 +180,7 @@ export interface GenerateWithAgentInput {
   system?: string
   prompt: string
   timeoutMs?: number
+  attachments?: ModelAttachment[]
 }
 
 /** Fresh session per call: the constructor and course mentor never share context. */
@@ -157,6 +199,7 @@ export async function generateWithAgent(input: GenerateWithAgentInput): Promise<
       prompt: input.prompt,
       maxTokens: 4096,
       signal: AbortSignal.timeout(timeoutMs),
+      ...(input.attachments?.length ? { attachments: input.attachments } : {}),
     })
   }
   const sessionId = await createOpencodeSession(
@@ -166,12 +209,12 @@ export async function generateWithAgent(input: GenerateWithAgentInput): Promise<
     reasoning,
   )
   try {
-    const client = await getClient()
-    const result = await client.session.generate(
-      { sessionID: sessionId, prompt: opencodePrompt(input.prompt, input.system) },
-      { signal: AbortSignal.timeout(timeoutMs) },
+    return await opencodeReply(
+      sessionId,
+      opencodePrompt(input.prompt, input.system),
+      input.attachments,
+      AbortSignal.timeout(timeoutMs),
     )
-    return result.text
   } finally {
     await deleteMentorSession(sessionId).catch(() => {})
   }

@@ -43,9 +43,11 @@ permissions:
 ---
 
 Ты — наставник в локальном учебном кабинете «Лестница обучения». Работай только
-с тем курсом и тем контекстом, которые переданы в запросе. Не выдумывай факты,
-которых нет в материалах. Объясняй, задавай наводящие вопросы и не давай готовое
-решение. Отвечай по-русски, спокойно и конкретно.
+с тем курсом и тем контекстом, которые переданы в запросе. Пользователь может
+приложить файлы к вопросу: считай их частью контекста и используй их содержимое,
+если вопрос относится к ним. Не выдумывай факты, которых нет в материалах.
+Объясняй, задавай наводящие вопросы и не давай готовое решение. Отвечай
+по-русски, спокойно и конкретно.
 `
 
 const COURSE_CONSTRUCTOR_AGENT = `---
@@ -60,10 +62,12 @@ permissions:
 ---
 
 Ты — методист и конструктор курсов в «Лестнице обучения». Создавай карточку
-курса, структуру и наполнение по запросу пользователя. Соблюдай инструкции
-приложения и возвращай только запрошенный JSON без Markdown-обёртки. Не
-выдумывай факты; если данных мало, принимай разумные решения и помечай
-предположения в тексте курса. Отвечай по-русски.
+курса, структуру и наполнение по запросу пользователя. Пользователь может
+приложить изображения, PDF и документы: используй их как источник фактов,
+примеров и структуры курса. Соблюдай инструкции приложения и возвращай только
+запрошенный JSON без Markdown-обёртки. Не выдумывай факты; если данных мало,
+принимай разумные решения и помечай предположения в тексте курса. Отвечай
+по-русски.
 `
 
 export function appConfigPath(): string {
@@ -163,9 +167,10 @@ export function writeConfiguredProjectRoot(root: string): void {
   writeFileSync(path, `${JSON.stringify({ projectRoot: resolve(root) }, null, 2)}\n`, "utf8")
 }
 
-function writeAgentIfMissing(root: string, name: string, content: string): void {
+function writeAgent(root: string, name: string, content: string): void {
   const path = join(root, ".opencode", "agents", name)
-  if (!existsSync(path)) writeFileSync(path, content, "utf8")
+  if (existsSync(path) && readFileSync(path, "utf8") === content) return
+  writeFileSync(path, content, "utf8")
 }
 
 export function ensureProjectLayout(root: string): ProjectPaths {
@@ -182,8 +187,8 @@ export function ensureProjectLayout(root: string): ProjectPaths {
     mkdirSync(path, { recursive: true })
   }
   mkdirSync(join(paths.root, ".opencode", "agents"), { recursive: true })
-  writeAgentIfMissing(paths.root, "course-mentor.md", COURSE_MENTOR_AGENT)
-  writeAgentIfMissing(paths.root, "course-constructor.md", COURSE_CONSTRUCTOR_AGENT)
+  writeAgent(paths.root, "course-mentor.md", COURSE_MENTOR_AGENT)
+  writeAgent(paths.root, "course-constructor.md", COURSE_CONSTRUCTOR_AGENT)
   return paths
 }
 

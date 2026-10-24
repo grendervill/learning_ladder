@@ -3,6 +3,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import type { AppContext } from "../context"
+import { createAttachment } from "../attachments/store"
 import { scanProject } from "../content/courses"
 import type { GenerateWithAgentInput } from "../mentor/client"
 import { createCourseGenerator } from "./generator"
@@ -174,5 +175,113 @@ describe("course generator", () => {
     const job = await waitForJob(generator, jobId)
     expect(job?.status).toBe("cancelled")
     expect(scanProject(dir).courses).toEqual([])
+  })
+
+  it("includes attachment text in outline and lesson prompts", async () => {
+    const prompts: string[] = []
+    const generate = async (input: GenerateWithAgentInput) => {
+      prompts.push(input.prompt)
+      return fakeGenerate(input)
+    }
+    const generator = createCourseGenerator({ getContext: contextFor, generate })
+    const jobId = generator.start({
+      topic: "экономика",
+      answers: [],
+      volume: "short",
+      materials: {
+        text: "--- Файл: notes.md ---\nHello material",
+        images: [],
+        attachments: [],
+        keep: false,
+      },
+    })
+    const job = await waitForJob(generator, jobId)
+
+    expect(job?.status).toBe("done")
+    expect(prompts.some((prompt) => prompt.includes("Hello material"))).toBe(true)
+  })
+
+  it("describes images once and reuses the description", async () => {
+    const calls: GenerateWithAgentInput[] = []
+    const generate = async (input: GenerateWithAgentInput) => {
+      calls.push(input)
+      if (input.attachments?.length) return "На изображении график инфляции."
+      return fakeGenerate(input)
+    }
+    const generator = createCourseGenerator({ getContext: contextFor, generate })
+    const jobId = generator.start({
+      topic: "экономика",
+      answers: [],
+      volume: "short",
+      materials: {
+        text: "",
+        images: [
+          {
+            kind: "image",
+            name: "chart.png",
+            mime: "image/png",
+            path: join(dir, "chart.png"),
+          },
+        ],
+        attachments: [],
+        keep: false,
+      },
+    })
+    const job = await waitForJob(generator, jobId)
+
+    expect(job?.status).toBe("done")
+    expect(calls.filter((call) => call.attachments?.length)).toHaveLength(1)
+    expect(calls.some((call) => call.prompt.includes("На изображении график инфляции."))).toBe(true)
+  })
+
+  it("copies kept attachments into the course materials", async () => {
+    const attachment = await createAttachment(dir, {
+      originalname: "notes.md",
+      mimetype: "text/markdown",
+      size: 5,
+      buffer: Buffer.from("Hello"),
+    })
+    const generator = createCourseGenerator({ getContext: contextFor, generate: fakeGenerate })
+    const jobId = generator.start({
+      topic: "экономика",
+      answers: [],
+      volume: "short",
+      materials: {
+        text: attachment.text ?? "",
+        images: [],
+        attachments: [attachment],
+        keep: true,
+      },
+    })
+    const job = await waitForJob(generator, jobId)
+
+    expect(job?.status).toBe("done")
+    expect(existsSync(join(dir, "courses", String(job?.courseId), "materials", "notes.md"))).toBe(true)
+    expect(existsSync(attachment.dir)).toBe(false)
+  })
+
+  it("deletes temporary attachments when keep is off", async () => {
+    const attachment = await createAttachment(dir, {
+      originalname: "notes.md",
+      mimetype: "text/markdown",
+      size: 5,
+      buffer: Buffer.from("Hello"),
+    })
+    const generator = createCourseGenerator({ getContext: contextFor, generate: fakeGenerate })
+    const jobId = generator.start({
+      topic: "экономика",
+      answers: [],
+      volume: "short",
+      materials: {
+        text: attachment.text ?? "",
+        images: [],
+        attachments: [attachment],
+        keep: false,
+      },
+    })
+    const job = await waitForJob(generator, jobId)
+
+    expect(job?.status).toBe("done")
+    expect(existsSync(attachment.dir)).toBe(false)
   })
 })

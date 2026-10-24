@@ -1,5 +1,10 @@
 import { randomBytes } from "node:crypto"
 import type { AppContext } from "../context"
+import {
+  deleteAttachments,
+  keepCourseAttachments,
+} from "../attachments/store"
+import type { ModelAttachment } from "../attachments/types"
 import { DEFAULT_COURSE_SETTINGS } from "../content/defaults"
 import { parseQuiz } from "../content/quiz"
 import {
@@ -29,6 +34,7 @@ import {
   outlineSchema,
   VOLUME_LIMITS,
   type ClarifyQuestion,
+  type CourseMaterials,
   type GenerateCourseInput,
   type Outline,
   type ParsedLesson,
@@ -37,7 +43,7 @@ import {
 type Generate = (input: GenerateWithAgentInput) => Promise<string>
 
 export interface CourseGenerator {
-  clarify(topic: string): Promise<ClarifyQuestion[]>
+  clarify(topic: string, materials?: CourseMaterials): Promise<ClarifyQuestion[]>
   start(input: GenerateCourseInput): string
   getJob(id: string): CourseJob | undefined
   cancelJob(id: string): boolean
@@ -148,6 +154,7 @@ export function createCourseGenerator(options: CourseGeneratorOptions): CourseGe
     system: string,
     prompt: string,
     parse: (value: unknown) => T,
+    attachments?: ModelAttachment[],
   ): Promise<T> {
     let lastError: unknown = new Error("mentor_invalid_json")
     let nextPrompt = prompt
@@ -157,6 +164,7 @@ export function createCourseGenerator(options: CourseGeneratorOptions): CourseGe
         system,
         prompt: nextPrompt,
         timeoutMs: 300_000,
+        ...(attachments?.length ? { attachments } : {}),
       })
       try {
         return parse(extractJson(raw))
@@ -168,13 +176,37 @@ export function createCourseGenerator(options: CourseGeneratorOptions): CourseGe
     throw new Error(`mentor_invalid_json: ${errorMessage(lastError)}`)
   }
 
+  async function buildMaterialsText(input: GenerateCourseInput, system: string): Promise<string> {
+    const text = input.materials?.text?.trim() ?? ""
+    const images = input.materials?.images ?? []
+    if (images.length === 0) return text
+    const descriptions = await generate({
+      agent: "course-constructor",
+      system,
+      prompt: `Пользователь приложил изображения к теме "${input.topic}".
+Опиши каждое изображение подробно и по-русски: текст, подписи, схемы, формулы,
+графики и всё, что важно для будущего курса. Не придумывай того, чего не видно.
+Верни связный текст без JSON.`,
+      timeoutMs: 180_000,
+      attachments: images,
+    })
+    return [text, `Описания изображений:\n${descriptions.trim()}`]
+      .filter(Boolean)
+      .join("\n\n")
+  }
+
   async function runJob(job: CourseJob, input: GenerateCourseInput): Promise<void> {
     const context = options.getContext()
     const root = context.root ?? process.cwd()
     const system = readConstructorPrompt(root)
+    const materialsText = await buildMaterialsText(input, system)
+    if (jobs.get(job.id)?.cancelRequested) {
+      jobs.update(job.id, { status: "cancelled", phase: "Сборка отменена" })
+      return
+    }
 
     jobs.update(job.id, { status: "outline", phase: "Собираем план" })
-    const outline = await callJson(system, outlinePrompt(input), (value) => {
+    const outline = await callJson(system, outlinePrompt({ ...input, materialsText }), (value) => {
       const parsed = outlineSchema.parse(value)
       const total = totalLessons(parsed)
       const limits = VOLUME_LIMITS[input.volume]
@@ -188,6 +220,10 @@ export function createCourseGenerator(options: CourseGeneratorOptions): CourseGe
     const runtime = runtimeFor(outline)
     const settings = mode === "programming" ? settingsForRuntime(runtime) : { ...DEFAULT_COURSE_SETTINGS }
     const total = totalLessons(outline)
+    if (jobs.get(job.id)?.cancelRequested) {
+      jobs.update(job.id, { status: "cancelled", phase: "Сборка отменена" })
+      return
+    }
     const courseId = `course-${Date.now().toString(36)}-${randomBytes(2).toString("hex")}`
     const createdAt = new Date().toISOString()
 
@@ -231,6 +267,7 @@ export function createCourseGenerator(options: CourseGeneratorOptions): CourseGe
           mentorPrompt: outline.mentorPrompt,
           index: completed + 1,
           total,
+          materialsText,
         })
         const parsed = await callJson(system, prompt, (value) => parseLesson(value, mode))
         const lesson = buildLesson(courseId, lessonId, lessonTitle, mode, settings, parsed)
@@ -266,6 +303,18 @@ export function createCourseGenerator(options: CourseGeneratorOptions): CourseGe
     jobs.update(job.id, { status: "saving", phase: "Сохраняем курс" })
     writeGeneratedCourse(root, course)
     writeMentorPrompt(root, courseId, outline.mentorPrompt)
+    const attachmentIds = input.materials?.attachments.map((attachment) => attachment.id) ?? []
+    if (attachmentIds.length > 0) {
+      try {
+        if (input.materials?.keep) {
+          keepCourseAttachments(root, courseId, attachmentIds)
+        } else {
+          deleteAttachments(root, attachmentIds)
+        }
+      } catch (error) {
+        console.error("[attachments] не удалось сохранить или удалить материалы курса", error)
+      }
+    }
     const snapshot = context.refreshCourse?.()
     emitEvent("course:changed", {
       version: snapshot?.version ?? null,
@@ -275,13 +324,14 @@ export function createCourseGenerator(options: CourseGeneratorOptions): CourseGe
   }
 
   return {
-    async clarify(topic) {
+    async clarify(topic, materials) {
       const context = options.getContext()
       const root = context.root ?? process.cwd()
       const parsed = await callJson(
         readConstructorPrompt(root),
-        clarifyPrompt(topic),
+        clarifyPrompt(topic, materials?.text),
         (value) => clarifySchema.parse(value),
+        materials?.images,
       )
       return parsed.questions
     },

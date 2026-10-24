@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs"
+import type { ModelAttachment } from "../attachments/types"
 import type { ReasoningLevel } from "../settings"
 
 export interface DirectGenerateInput {
@@ -10,6 +12,7 @@ export interface DirectGenerateInput {
   prompt: string
   maxTokens?: number
   signal?: AbortSignal
+  attachments?: ModelAttachment[]
 }
 
 const DEFAULT_BASE_URLS: Record<string, string> = {
@@ -68,12 +71,30 @@ function messageContent(value: unknown): string {
   return ""
 }
 
+function images(input: DirectGenerateInput): ModelAttachment[] {
+  return (input.attachments ?? []).filter((attachment) => attachment.kind === "image")
+}
+
+function base64Image(attachment: ModelAttachment): string {
+  return readFileSync(attachment.path).toString("base64")
+}
+
 async function generateOpenAiCompatible(input: DirectGenerateInput): Promise<string> {
   const base = trimmedBaseUrl(input)
   if (!base) throw new Error("provider_base_url_missing")
-  const messages: Array<{ role: string; content: string }> = []
+  const imageList = images(input)
+  const userContent = imageList.length
+    ? [
+        { type: "text", text: input.prompt },
+        ...imageList.map((attachment) => ({
+          type: "image_url",
+          image_url: { url: `data:${attachment.mime};base64,${base64Image(attachment)}` },
+        })),
+      ]
+    : input.prompt
+  const messages: Array<{ role: string; content: string | Array<Record<string, unknown>> }> = []
   if (input.system?.trim()) messages.push({ role: "system", content: input.system.trim() })
-  messages.push({ role: "user", content: input.prompt })
+  messages.push({ role: "user", content: userContent })
   const maxTokens = input.maxTokens ?? 4096
   const body: Record<string, unknown> = {
     model: input.model,
@@ -107,10 +128,22 @@ async function generateOpenAiCompatible(input: DirectGenerateInput): Promise<str
 async function generateAnthropic(input: DirectGenerateInput): Promise<string> {
   const base = trimmedBaseUrl(input)
   const maxTokens = input.maxTokens ?? (input.reasoning === "off" ? 4096 : 8192)
+  const imageList = images(input)
+  const userContent: Array<Record<string, unknown>> = [{ type: "text", text: input.prompt }]
+  for (const attachment of imageList) {
+    userContent.push({
+      type: "image",
+      source: {
+        type: "base64",
+        media_type: attachment.mime,
+        data: base64Image(attachment),
+      },
+    })
+  }
   const body: Record<string, unknown> = {
     model: input.model,
     max_tokens: maxTokens,
-    messages: [{ role: "user", content: input.prompt }],
+    messages: [{ role: "user", content: userContent }],
   }
   if (input.system?.trim()) body.system = input.system.trim()
   if (input.reasoning === "off") {
@@ -149,8 +182,17 @@ async function generateGoogle(input: DirectGenerateInput): Promise<string> {
     }
     return { thinkingBudget: thinkingBudget(input.reasoning) }
   })()
+  const parts: Array<Record<string, unknown>> = [{ text: input.prompt }]
+  for (const attachment of images(input)) {
+    parts.push({
+      inline_data: {
+        mime_type: attachment.mime,
+        data: base64Image(attachment),
+      },
+    })
+  }
   const body: Record<string, unknown> = {
-    contents: [{ role: "user", parts: [{ text: input.prompt }] }],
+    contents: [{ role: "user", parts }],
     generationConfig: {
       maxOutputTokens: input.maxTokens ?? 4096,
       ...(thinking ? { thinkingConfig: thinking } : {}),

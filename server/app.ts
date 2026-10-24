@@ -8,6 +8,7 @@ import { createCourseRouter } from "./routes/course"
 import { createCoursesRouter } from "./routes/courses"
 import { createProjectRouter } from "./routes/project"
 import { createCourseBuilderRouter } from "./routes/course-builder"
+import { createAttachmentsRouter } from "./routes/attachments"
 import type { ProjectManager } from "./project-controller"
 import type { ProjectStatus } from "./project"
 import { createCourseGenerator, type CourseGenerator } from "./courses/generator"
@@ -62,7 +63,8 @@ export function createApp(options: AppOptions = {}): Express {
 
   app.use("/api", createCourseRouter(getContext))
   app.use("/api", createCoursesRouter(getContext))
-  app.use("/api", createCourseBuilderRouter(courseBuilder))
+  app.use("/api", createAttachmentsRouter(getContext))
+  app.use("/api", createCourseBuilderRouter(courseBuilder, getContext))
   app.use("/api", createProjectRouter(getContext, options.project, options.projectStatus))
   app.use("/api", createQuizRouter(getContext))
   app.use("/api", createTaskFilesRouter(getContext))
