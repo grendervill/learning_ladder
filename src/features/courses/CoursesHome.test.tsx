@@ -44,7 +44,14 @@ beforeEach(() => {
     vi.fn(async (input: any) => {
       const url = new URL(String(input), "http://localhost")
       if (url.pathname === "/api/project") {
-        return response({ root: "/tmp/ladder-project", courses: total, exists: true, writable: true })
+        return response({
+          root: "/tmp/ladder-project",
+          courses: total,
+          exists: true,
+          writable: true,
+          defaultRoot: "/tmp/ladder-project",
+          isDefault: true,
+        })
       }
       if (url.pathname === "/api/courses") {
         const page = Number(url.searchParams.get("page") ?? 1)

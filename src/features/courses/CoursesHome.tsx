@@ -63,12 +63,16 @@ export function CoursesHome() {
       return
     }
     const selected = await pickProjectFolder()
-    if (!selected) return
+    if (selected.error) {
+      navigate("/settings?tab=project&picker=error")
+      return
+    }
+    if (!selected.path) return
     setChangingProject(true)
     try {
       await fetchJson("/api/project", {
         method: "PUT",
-        body: JSON.stringify({ root: selected }),
+        body: JSON.stringify({ root: selected.path }),
       })
       window.location.reload()
     } catch {

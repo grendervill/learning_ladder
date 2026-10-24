@@ -527,6 +527,40 @@
   margin-top: 1px;
 }
 
+.project-warning--error {
+  border-left-color: var(--danger);
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.project-default {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-tint);
+}
+
+.project-default > div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.project-default code {
+  overflow-wrap: anywhere;
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+}
+
+.project-default .settings-button {
+  flex: none;
+}
+
 /* Network */
 .network-layout {
   display: grid;

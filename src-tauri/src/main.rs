@@ -2,7 +2,7 @@
 
 use std::io::{Read, Write};
 use std::net::TcpStream;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
@@ -47,15 +47,37 @@ fn server_healthy() -> bool {
     response.contains("\"status\":\"ok\"")
 }
 
+fn writable_dir(path: &Path) -> bool {
+    if std::fs::create_dir_all(path).is_err() {
+        return false;
+    }
+    let probe = path.join(".learning-ladder-write-test");
+    match std::fs::write(&probe, b"") {
+        Ok(()) => {
+            let _ = std::fs::remove_file(&probe);
+            true
+        }
+        Err(_) => false,
+    }
+}
+
 fn default_project_root(app: &AppHandle) -> PathBuf {
-    let base = app
-        .path()
-        .document_dir()
-        .ok()
-        .or_else(|| app.path().home_dir().ok())
-        .or_else(|| std::env::current_dir().ok())
-        .unwrap_or_else(|| PathBuf::from("."));
-    base.join("Лестница обучения")
+    let mut candidates: Vec<PathBuf> = Vec::new();
+    if let Ok(base) = app.path().document_dir() {
+        candidates.push(base.join("Лестница обучения"));
+    }
+    if let Ok(home) = app.path().home_dir() {
+        candidates.push(home.join("Лестница обучения"));
+    }
+    if let Ok(cwd) = std::env::current_dir() {
+        candidates.push(cwd.join("Лестница обучения"));
+    }
+    candidates.push(std::env::temp_dir().join("Лестница обучения"));
+
+    candidates
+        .into_iter()
+        .find(|path| writable_dir(path))
+        .unwrap_or_else(|| std::env::temp_dir().join("Лестница обучения"))
 }
 
 fn spawn_server(app: &AppHandle) -> std::io::Result<Child> {

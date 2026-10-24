@@ -16,7 +16,15 @@ beforeEach(() => {
         return json({ root: "/tmp/new-project", courses: 0 })
       }
       if (url === "/api/project") {
-        return json({ root: "/tmp/current-project", courses: 2, exists: true, writable: true })
+        return json({
+          root: "/tmp/current-project",
+          courses: 2,
+          exists: true,
+          writable: true,
+          defaultRoot: "/tmp/default-project",
+          isDefault: false,
+          fallbackError: "Сохранённая папка /tmp/old-project недоступна",
+        })
       }
       return json({})
     }),
@@ -43,5 +51,16 @@ describe("ProjectTab", () => {
     const calls = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls
     const put = calls.find((call) => call[1]?.method === "PUT")
     expect(JSON.parse(String(put?.[1]?.body))).toEqual({ root: "/tmp/new-project" })
+  })
+
+  it("shows the default folder and the fallback warning", async () => {
+    renderWithProviders(<ProjectTab />)
+
+    expect(await screen.findByText("/tmp/default-project")).toBeInTheDocument()
+    expect(screen.getByText(/Сохранённая папка \/tmp\/old-project недоступна/)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Папка по умолчанию" }))
+
+    expect(screen.getByLabelText("Путь к папке проекта")).toHaveValue("/tmp/default-project")
   })
 })

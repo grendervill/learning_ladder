@@ -65,6 +65,9 @@ export interface ProjectResponse {
   courses: number
   exists: boolean
   writable: boolean
+  defaultRoot: string
+  isDefault: boolean
+  fallbackError?: string
 }
 
 export interface ChapterSummary {

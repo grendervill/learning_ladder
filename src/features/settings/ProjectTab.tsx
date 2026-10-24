@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { useMutation } from "@tanstack/react-query"
+import { useSearchParams } from "react-router-dom"
 import { FolderOpen, LoaderCircle, Save, TriangleAlert } from "lucide-react"
 import { fetchJson } from "../../lib/api"
 import {
@@ -10,10 +11,13 @@ import { useProject } from "../../lib/useProject"
 
 export function ProjectTab({ onSwitched }: { onSwitched?: () => void }) {
   const project = useProject()
+  const [params] = useSearchParams()
   const [root, setRoot] = useState("")
   const [saved, setSaved] = useState(false)
   const [picking, setPicking] = useState(false)
+  const [pickError, setPickError] = useState<string | null>(null)
   const nativePicker = hasNativeFolderPicker()
+  const pickerNavigationError = params.get("picker") === "error"
 
   useEffect(() => {
     if (project.data?.root) setRoot(project.data.root)
@@ -21,11 +25,14 @@ export function ProjectTab({ onSwitched }: { onSwitched?: () => void }) {
 
   const chooseFolder = async () => {
     setPicking(true)
-    const selected = await pickProjectFolder()
+    setPickError(null)
+    const result = await pickProjectFolder()
     setPicking(false)
-    if (selected) {
-      setRoot(selected)
+    if (result.path) {
+      setRoot(result.path)
       setSaved(false)
+    } else if (result.error) {
+      setPickError(result.error)
     }
   }
 
@@ -57,6 +64,11 @@ export function ProjectTab({ onSwitched }: { onSwitched?: () => void }) {
     )
   }
 
+  const defaultRoot = project.data.defaultRoot ?? project.data.root
+  const isDefault =
+    project.data.isDefault ?? root.trim() === defaultRoot
+  const errorMessage = pickError ?? (pickerNavigationError ? "Не удалось открыть системный выбор папки. Вставьте путь вручную." : null)
+
   return (
     <div className="project-panel">
       <div className="project-summary">
@@ -78,6 +90,35 @@ export function ProjectTab({ onSwitched }: { onSwitched?: () => void }) {
         <span>курсов: {project.data.courses}</span>
         <span>{project.data.exists ? "папка существует" : "папка будет создана"}</span>
         <span>{project.data.writable ? "запись разрешена" : "нет прав на запись"}</span>
+        {isDefault && <span>папка по умолчанию</span>}
+      </div>
+
+      {project.data.fallbackError && (
+        <div className="project-warning project-warning--error" role="status">
+          <TriangleAlert size={15} aria-hidden />
+          <span>{project.data.fallbackError}</span>
+        </div>
+      )}
+
+      <div className="project-default">
+        <div>
+          <span className="settings-field__label">Папка по умолчанию</span>
+          <code>{defaultRoot}</code>
+        </div>
+        {!isDefault && (
+          <button
+            type="button"
+            className="settings-button settings-button--ghost"
+            onClick={() => {
+              setRoot(defaultRoot)
+              setSaved(false)
+              setPickError(null)
+            }}
+            disabled={switchProject.isPending}
+          >
+            Папка по умолчанию
+          </button>
+        )}
       </div>
 
       <label className="settings-field">
@@ -88,6 +129,7 @@ export function ProjectTab({ onSwitched }: { onSwitched?: () => void }) {
           onChange={(event) => {
             setRoot(event.target.value)
             setSaved(false)
+            setPickError(null)
           }}
           placeholder="/Users/you/Documents/Лестница обучения"
           aria-label="Путь к папке проекта"
@@ -95,6 +137,7 @@ export function ProjectTab({ onSwitched }: { onSwitched?: () => void }) {
         <span className="settings-field__hint">
           Можно вставить абсолютный путь или выбрать папку в приложении. Несуществующая
           папка будет создана с нужными подкаталогами.
+          {!nativePicker && " В браузере системный выбор недоступен — вставьте путь вручную."}
         </span>
       </label>
 
@@ -104,21 +147,19 @@ export function ProjectTab({ onSwitched }: { onSwitched?: () => void }) {
       </div>
 
       <div className="settings-actions">
-        {nativePicker && (
-          <button
-            type="button"
-            className="settings-button settings-button--ghost"
-            onClick={() => void chooseFolder()}
-            disabled={picking || switchProject.isPending}
-          >
-            {picking ? (
-              <LoaderCircle size={14} className="spin" aria-hidden />
-            ) : (
-              <FolderOpen size={14} aria-hidden />
-            )}
-            {picking ? "Открываем…" : "Выбрать папку"}
-          </button>
-        )}
+        <button
+          type="button"
+          className="settings-button settings-button--ghost"
+          onClick={() => void chooseFolder()}
+          disabled={picking || switchProject.isPending}
+        >
+          {picking ? (
+            <LoaderCircle size={14} className="spin" aria-hidden />
+          ) : (
+            <FolderOpen size={14} aria-hidden />
+          )}
+          {picking ? "Открываем…" : "Выбрать папку"}
+        </button>
         <button
           type="button"
           className="settings-button settings-button--primary"
@@ -133,6 +174,7 @@ export function ProjectTab({ onSwitched }: { onSwitched?: () => void }) {
           {switchProject.isPending ? "Переключаем…" : "Сменить папку проекта"}
         </button>
         {saved && <span className="settings-saved">Папка переключена</span>}
+        {errorMessage && <span className="settings-save-error">{errorMessage}</span>}
         {switchProject.isError && (
           <span className="settings-save-error">
             Не удалось переключить: {switchProject.error.message}
