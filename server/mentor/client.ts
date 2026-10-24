@@ -33,6 +33,7 @@ export interface OpencodeModelInfo {
   modelID: string
   name: string
   variants: string[]
+  input?: string[]
   enabled: boolean
   status: string
 }
@@ -46,6 +47,7 @@ export async function listOpencodeModels(): Promise<OpencodeModelInfo[]> {
     modelID: String(model.modelID),
     name: String(model.name ?? model.modelID),
     variants: (model.variants ?? []).map((variant) => String(variant.id)),
+    input: (model.capabilities?.input ?? []).map((value) => String(value)),
     enabled: model.enabled !== false,
     status: String(model.status ?? "active"),
   }))
