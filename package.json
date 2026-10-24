@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "posttauri:build": "node scripts/fix-deb-package.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.4",

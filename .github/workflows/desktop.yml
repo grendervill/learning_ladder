@@ -53,7 +53,6 @@ jobs:
             libappindicator3-dev \
             librsvg2-dev \
             patchelf \
-            rpm \
             libgtk-3-dev \
             libsoup-3.0-dev \
             javascriptcoregtk-4.1-dev
