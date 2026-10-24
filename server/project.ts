@@ -5,7 +5,7 @@ import {
   renameSync,
   writeFileSync,
 } from "node:fs"
-import { homedir } from "node:os"
+import { homedir, tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { DEFAULT_LUA_COURSE_META, DEFAULT_LUA_MENTOR_PROMPT } from "./content/defaults"
 
@@ -20,6 +20,13 @@ export interface ProjectPaths {
   reportsDir: string
   constructorPromptPath: string
   configPath: string
+}
+
+export interface ProjectStatus {
+  defaultRoot: string
+  activeRoot: string
+  configuredRoot: string
+  fallbackError?: string
 }
 
 const FRONTMATTER = /^---\r?\n[\s\S]*?\r?\n---\r?\n?/
@@ -103,6 +110,51 @@ export function readConfiguredProjectRoot(fallback: string): string {
     // A damaged config should not make the app unstartable.
   }
   return resolve(fallback)
+}
+
+export function projectRootCandidates(
+  fallback: string,
+  configured = readConfiguredProjectRoot(fallback),
+): string[] {
+  const candidates = [
+    configured,
+    fallback,
+    join(homedir(), "Лестница обучения"),
+    process.cwd(),
+    join(tmpdir(), "Лестница обучения"),
+  ]
+  const seen = new Set<string>()
+  const result: string[] = []
+  for (const candidate of candidates) {
+    const absolute = resolve(candidate)
+    if (seen.has(absolute)) continue
+    seen.add(absolute)
+    result.push(absolute)
+  }
+  return result
+}
+
+export interface UsableProjectRoot {
+  root: string
+  error?: string
+}
+
+export function resolveUsableProjectRoot(
+  candidates: string[],
+  ensure: (root: string) => unknown = ensureProjectLayout,
+): UsableProjectRoot {
+  let error: string | undefined
+  for (const candidate of candidates) {
+    try {
+      ensure(candidate)
+      return { root: resolve(candidate), ...(error ? { error } : {}) }
+    } catch (cause) {
+      if (!error) {
+        error = `${candidate}: ${cause instanceof Error ? cause.message : String(cause)}`
+      }
+    }
+  }
+  return { root: resolve(candidates[0] ?? process.cwd()), error: error ?? "project_root_unavailable" }
 }
 
 export function writeConfiguredProjectRoot(root: string): void {

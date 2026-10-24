@@ -9,6 +9,7 @@ import { migrate, openDatabase } from "../db"
 import { DEFAULT_LUA_COURSE_META } from "../content/defaults"
 import type { CourseSnapshot } from "../content/types"
 import type { ProjectManager } from "../project-controller"
+import type { ProjectStatus } from "../project"
 
 let dir: string
 
@@ -31,13 +32,20 @@ function snapshot(): CourseSnapshot {
   }
 }
 
-function makeApp(project?: ProjectManager) {
+function makeApp(project?: ProjectManager, projectStatus?: () => ProjectStatus) {
   const db = openDatabase(":memory:")
   migrate(db)
   const course = snapshot()
   const context = buildContext(db, course, join(dir, "missing.md"), dir)
   return {
-    app: createApp({ db, course, root: dir, progressPath: join(dir, "missing.md"), project }),
+    app: createApp({
+      db,
+      course,
+      root: dir,
+      progressPath: join(dir, "missing.md"),
+      project,
+      projectStatus,
+    }),
     context,
   }
 }
@@ -48,6 +56,40 @@ describe("project api", () => {
     const res = await request(app).get("/api/project")
     expect(res.status).toBe(200)
     expect(res.body).toMatchObject({ root: dir, courses: 1, exists: true, writable: true })
+  })
+
+  it("reports the default root and fallback state", async () => {
+    const defaultRoot = join(dir, "default-project")
+    const { app } = makeApp(undefined, () => ({
+      defaultRoot,
+      activeRoot: dir,
+      configuredRoot: join(dir, "missing-external"),
+      fallbackError: "старая папка недоступна",
+    }))
+
+    const res = await request(app).get("/api/project")
+
+    expect(res.status).toBe(200)
+    expect(res.body).toMatchObject({
+      root: dir,
+      defaultRoot,
+      isDefault: false,
+      fallbackError: "старая папка недоступна",
+    })
+  })
+
+  it("marks the current root as default", async () => {
+    const { app } = makeApp(undefined, () => ({
+      defaultRoot: dir,
+      activeRoot: dir,
+      configuredRoot: dir,
+    }))
+
+    const res = await request(app).get("/api/project")
+
+    expect(res.status).toBe(200)
+    expect(res.body).toMatchObject({ root: dir, defaultRoot: dir, isDefault: true })
+    expect(res.body.fallbackError).toBeUndefined()
   })
 
   it("returns 501 when project switching is not configured", async () => {

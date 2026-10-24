@@ -10,9 +10,10 @@ import { attachLspServer } from "./lsp/server"
 import { getMentorService } from "./mentor/service"
 import { createProjectManager, type ProjectManager } from "./project-controller"
 import {
-  ensureProjectLayout,
+  projectRootCandidates,
   readConfiguredProjectRoot,
-  writeConfiguredProjectRoot,
+  resolveUsableProjectRoot,
+  type ProjectStatus,
 } from "./project"
 import { finalizeStaleSessions } from "./sessions/lifecycle"
 
@@ -20,16 +21,24 @@ const DEFAULT_PORT = 4174
 
 export async function startServer(port = DEFAULT_PORT): Promise<Server> {
   const staticRoot = process.env.LEARNINGLUA_STATIC_ROOT ?? process.cwd()
-  const fallbackProjectRoot = process.env.LEARNINGLUA_PROJECT_ROOT ?? process.cwd()
-  let projectRoot = readConfiguredProjectRoot(fallbackProjectRoot)
-  try {
-    ensureProjectLayout(projectRoot)
-  } catch (error) {
-    console.error(`[project] не удалось открыть ${projectRoot}: ${String(error)}`)
-    projectRoot = fallbackProjectRoot
-    writeConfiguredProjectRoot(fallbackProjectRoot)
-    ensureProjectLayout(projectRoot)
+  const fallbackProjectRoot = resolve(process.env.LEARNINGLUA_PROJECT_ROOT ?? process.cwd())
+  const configuredRoot = readConfiguredProjectRoot(fallbackProjectRoot)
+  const resolved = resolveUsableProjectRoot(
+    projectRootCandidates(fallbackProjectRoot, configuredRoot),
+  )
+  const projectRoot = resolved.root
+  const fallbackError = resolved.error
+    ? `Сохранённая папка ${configuredRoot} недоступна: ${resolved.error}`
+    : projectRoot !== configuredRoot
+      ? `Сохранённая папка ${configuredRoot} недоступна; используется ${projectRoot}`
+      : undefined
+  const projectState: ProjectStatus = {
+    defaultRoot: fallbackProjectRoot,
+    activeRoot: projectRoot,
+    configuredRoot,
+    ...(fallbackError ? { fallbackError } : {}),
   }
+  if (fallbackError) console.error(`[project] ${fallbackError}`)
   if (resolve(projectRoot) !== resolve(process.cwd())) {
     process.chdir(projectRoot)
   }
@@ -65,6 +74,9 @@ export async function startServer(port = DEFAULT_PORT): Promise<Server> {
     onAfterSwitch: (context) => {
       void watcher?.close()
       watcher = startWatcher(context)
+      projectState.activeRoot = context.root ?? process.cwd()
+      projectState.configuredRoot = projectState.activeRoot
+      delete projectState.fallbackError
       emitEvent("project:changed", { root: context.root ?? process.cwd() })
       emitEvent("course:changed", { version: context.getCourse().version })
     },
@@ -74,6 +86,7 @@ export async function startServer(port = DEFAULT_PORT): Promise<Server> {
     createApp({
       getContext: () => manager.getContext(),
       project: manager,
+      projectStatus: () => projectState,
       staticRoot,
     }),
   )

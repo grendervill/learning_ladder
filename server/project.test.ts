@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
-import { tmpdir } from "node:os"
+import { homedir, tmpdir } from "node:os"
 import { join, resolve } from "node:path"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { closeDb } from "./db"
@@ -7,8 +7,10 @@ import {
   appConfigPath,
   ensureProjectLayout,
   migrateLegacyLua,
+  projectRootCandidates,
   readConfiguredProjectRoot,
   resolveProjectPaths,
+  resolveUsableProjectRoot,
   writeConfiguredProjectRoot,
 } from "./project"
 
@@ -46,6 +48,31 @@ describe("project paths and config", () => {
     expect(appConfigPath()).toBe(join(dir, "app-config.json"))
     expect(JSON.parse(readFileSync(appConfigPath(), "utf8"))).toEqual({ projectRoot: resolve(root) })
     expect(readConfiguredProjectRoot(join(dir, "fallback"))).toBe(resolve(root))
+  })
+})
+
+describe("project root candidates", () => {
+  it("orders configured, fallback, home and cwd without duplicates", () => {
+    const configured = join(dir, "configured")
+    const fallback = join(dir, "fallback")
+    const candidates = projectRootCandidates(fallback, configured)
+    expect(candidates[0]).toBe(resolve(configured))
+    expect(candidates[1]).toBe(resolve(fallback))
+    expect(candidates).toContain(resolve(join(homedir(), "Лестница обучения")))
+    expect(candidates).toContain(resolve(process.cwd()))
+    expect(new Set(candidates).size).toBe(candidates.length)
+  })
+
+  it("uses the next candidate when the configured root cannot be opened", () => {
+    const configured = join(dir, "blocked")
+    const fallback = join(dir, "fallback")
+    writeFileSync(configured, "not a directory", "utf8")
+
+    const result = resolveUsableProjectRoot([configured, fallback])
+
+    expect(result.root).toBe(resolve(fallback))
+    expect(result.error).toContain("blocked")
+    expect(existsSync(join(fallback, "data"))).toBe(true)
   })
 })
 

@@ -1,18 +1,23 @@
 import { accessSync, constants, existsSync } from "node:fs"
+import { resolve } from "node:path"
 import { Router } from "express"
 import type { AppContext } from "../context"
 import { coursesOf } from "../content/courses"
 import type { ProjectManager } from "../project-controller"
+import type { ProjectStatus } from "../project"
 
 export function createProjectRouter(
   getContext: () => AppContext,
   project?: ProjectManager,
+  getStatus?: () => ProjectStatus,
 ): Router {
   const router = Router()
 
   router.get("/project", (_req, res) => {
     const context = getContext()
     const root = context.root ?? process.cwd()
+    const status = getStatus?.()
+    const defaultRoot = status?.defaultRoot ?? root
     let writable = false
     try {
       accessSync(root, constants.W_OK)
@@ -25,6 +30,9 @@ export function createProjectRouter(
       courses: coursesOf(context.getCourse()).length,
       exists: existsSync(root),
       writable,
+      defaultRoot,
+      isDefault: resolve(root) === resolve(defaultRoot),
+      ...(status?.fallbackError ? { fallbackError: status.fallbackError } : {}),
     })
   })
 

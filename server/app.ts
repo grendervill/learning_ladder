@@ -9,6 +9,7 @@ import { createCoursesRouter } from "./routes/courses"
 import { createProjectRouter } from "./routes/project"
 import { createCourseBuilderRouter } from "./routes/course-builder"
 import type { ProjectManager } from "./project-controller"
+import type { ProjectStatus } from "./project"
 import { createCourseGenerator, type CourseGenerator } from "./courses/generator"
 import { createProgressRouter } from "./routes/progress"
 import { createQuizRouter } from "./routes/quiz"
@@ -32,6 +33,7 @@ export interface AppOptions {
   staticRoot?: string
   getContext?: () => AppContext
   project?: ProjectManager
+  projectStatus?: () => ProjectStatus
   courseBuilder?: CourseGenerator
   mentor?: MentorService
   context?: AppContext
@@ -61,7 +63,7 @@ export function createApp(options: AppOptions = {}): Express {
   app.use("/api", createCourseRouter(getContext))
   app.use("/api", createCoursesRouter(getContext))
   app.use("/api", createCourseBuilderRouter(courseBuilder))
-  app.use("/api", createProjectRouter(getContext, options.project))
+  app.use("/api", createProjectRouter(getContext, options.project, options.projectStatus))
   app.use("/api", createQuizRouter(getContext))
   app.use("/api", createTaskFilesRouter(getContext))
   app.use("/api", createRunRouter(getContext))
