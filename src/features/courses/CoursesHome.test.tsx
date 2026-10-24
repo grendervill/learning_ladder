@@ -145,6 +145,8 @@ describe("CoursesHome", () => {
     expect(screen.getByText("Страница 1 из 2")).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: /Вперёд/ }))
     expect(await screen.findByText("Страница 2 из 2")).toBeInTheDocument()
-    expect(screen.getAllByRole("heading", { name: /^Курс / })).toHaveLength(1)
+    await waitFor(() =>
+      expect(screen.getAllByRole("heading", { name: /^Курс / })).toHaveLength(1),
+    )
   })
 })
