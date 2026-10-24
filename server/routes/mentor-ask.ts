@@ -10,6 +10,7 @@ import {
 } from "../attachments/store"
 import { formatMaterials, imageAttachments } from "../attachments/prompt"
 import { supportsImages } from "../attachments/model-support"
+import { AttachmentPromptError } from "../mentor/client"
 import type { MentorService } from "../mentor/service"
 import type { MentorContext, MentorRun } from "../mentor/types"
 import type { TaskFile } from "../content/types"
@@ -125,6 +126,10 @@ export function createMentorAskRouter(
     try {
       answer = await mentor.askMentor(sessionId, mentorContext, question)
     } catch (error) {
+      if (error instanceof AttachmentPromptError) {
+        res.status(400).json({ error: error.code, message: error.message })
+        return
+      }
       next(error)
       return
     } finally {

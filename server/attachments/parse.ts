@@ -100,23 +100,66 @@ export async function extractAttachmentText(
     return buffer.toString("utf8").replace(/^\uFEFF/, "").trim()
   }
   if (kind === "pdf") {
-    const { text } = await extractPdfText(new Uint8Array(buffer), { mergePages: true })
-    const normalized = text.trim()
+    try {
+      const { text } = await extractPdfText(new Uint8Array(buffer), { mergePages: true })
+      const normalized = text.trim()
+      if (!normalized) {
+        throw new AttachmentError(
+          "pdf_without_text",
+          "В PDF не найден текстовый слой. Приложите PDF с текстом или изображения страниц.",
+        )
+      }
+      return normalized
+    } catch (cause) {
+      if (cause instanceof AttachmentError) throw cause
+      throw new AttachmentError(
+        "unreadable_file",
+        "Не удалось прочитать PDF. Файл повреждён или это не PDF.",
+      )
+    }
+  }
+  try {
+    const result = await mammoth.extractRawText({ buffer })
+    const normalized = result.value.trim()
     if (!normalized) {
       throw new AttachmentError(
-        "pdf_without_text",
-        "В PDF не найден текстовый слой. Приложите PDF с текстом или изображения страниц.",
+        "document_without_text",
+        "В документе не найден текст. Проверьте файл или сохраните его как PDF.",
       )
     }
     return normalized
-  }
-  const result = await mammoth.extractRawText({ buffer })
-  const normalized = result.value.trim()
-  if (!normalized) {
+  } catch (cause) {
+    if (cause instanceof AttachmentError) throw cause
     throw new AttachmentError(
-      "document_without_text",
-      "В документе не найден текст. Проверьте файл или сохраните его как PDF.",
+      "unreadable_file",
+      "Не удалось прочитать документ. Файл повреждён или это не DOCX.",
     )
   }
-  return normalized
+}
+
+export function hasImageSignature(buffer: Buffer, mime: string): boolean {
+  if (mime === "image/png") {
+    return (
+      buffer.length >= 8 &&
+      buffer[0] === 0x89 &&
+      buffer[1] === 0x50 &&
+      buffer[2] === 0x4e &&
+      buffer[3] === 0x47 &&
+      buffer[4] === 0x0d &&
+      buffer[5] === 0x0a &&
+      buffer[6] === 0x1a &&
+      buffer[7] === 0x0a
+    )
+  }
+  if (mime === "image/jpeg") {
+    return buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff
+  }
+  if (mime === "image/webp") {
+    return (
+      buffer.length >= 12 &&
+      buffer.toString("ascii", 0, 4) === "RIFF" &&
+      buffer.toString("ascii", 8, 12) === "WEBP"
+    )
+  }
+  return false
 }

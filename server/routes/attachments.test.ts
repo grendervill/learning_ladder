@@ -68,6 +68,42 @@ describe("attachments api", () => {
     expect(existsSync(tmp)).toBe(false)
   })
 
+  it("limits the number of files", async () => {
+    const req = request(makeApp()).post("/api/attachments")
+    for (let index = 0; index < 6; index += 1) {
+      req.attach("files", Buffer.from("x"), {
+        filename: `file-${index}.txt`,
+        contentType: "text/plain",
+      })
+    }
+    const response = await req
+    expect(response.status).toBe(400)
+    expect(response.body.error).toBe("limit_file_count")
+  })
+
+  it("preserves Cyrillic filenames", async () => {
+    const response = await request(makeApp())
+      .post("/api/attachments")
+      .attach("files", Buffer.from("Конспект"), {
+        filename: "Конспект лекции.txt",
+        contentType: "text/plain",
+      })
+
+    expect(response.status).toBe(201)
+    expect(response.body.attachments[0].name).toBe("Конспект лекции.txt")
+  })
+
+  it("rejects corrupt documents with a clear error", async () => {
+    const response = await request(makeApp())
+      .post("/api/attachments")
+      .attach("files", Buffer.from("not a pdf"), {
+        filename: "broken.pdf",
+        contentType: "application/pdf",
+      })
+    expect(response.status).toBe(400)
+    expect(response.body.error).toBe("unreadable_file")
+  })
+
   it("rejects unsupported files", async () => {
     const app = makeApp()
     const response = await request(app)

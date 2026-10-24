@@ -9,7 +9,7 @@ import {
 } from "lucide-react"
 import { AttachmentPicker } from "../../components/AttachmentPicker"
 import { deleteAttachment, type UploadedAttachment } from "../../lib/attachments"
-import { fetchJson } from "../../lib/api"
+import { ApiError, fetchJson } from "../../lib/api"
 import { Markdown } from "../../lib/markdown"
 import "./MentorDrawer.css"
 
@@ -104,11 +104,11 @@ export function MentorDrawer({
       setKeepAttachments(false)
     } catch (cause) {
       setError(
-        cause instanceof Error && cause.message === "lesson_locked"
-          ? "Этот урок ещё закрыт."
-          : cause instanceof Error && cause.message === "model_without_vision"
-            ? "Выбранная модель не принимает изображения. Выберите модель с поддержкой vision."
-            : "Наставник сейчас недоступен. Попробуй ещё раз.",
+        cause instanceof ApiError
+          ? cause.code === "lesson_locked"
+            ? "Этот урок ещё закрыт."
+            : cause.message
+          : "Наставник сейчас недоступен. Попробуй ещё раз.",
       )
     } finally {
       setSending(false)
@@ -208,6 +208,7 @@ export function MentorDrawer({
             compact
             label="Файлы к вопросу"
             keepLabel="Сохранить в проекте"
+            keepHint="Файлы останутся в проекте после ответа."
           />
         </div>
 

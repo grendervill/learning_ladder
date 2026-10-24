@@ -167,12 +167,19 @@ export async function generateMentorReply(
       ...(attachments?.length ? { attachments } : {}),
     })
   }
-  return opencodeReply(
-    sessionId,
-    opencodePrompt(prompt, system),
-    attachments,
-    AbortSignal.timeout(180_000),
-  )
+  try {
+    return await opencodeReply(
+      sessionId,
+      opencodePrompt(prompt, system),
+      attachments,
+      AbortSignal.timeout(180_000),
+    )
+  } catch (error) {
+    if (attachments?.length && !(error instanceof Error && error.name === "TimeoutError")) {
+      throw new AttachmentPromptError()
+    }
+    throw error
+  }
 }
 
 export interface GenerateWithAgentInput {
@@ -181,6 +188,17 @@ export interface GenerateWithAgentInput {
   prompt: string
   timeoutMs?: number
   attachments?: ModelAttachment[]
+}
+
+export class AttachmentPromptError extends Error {
+  readonly code = "attachments_unsupported"
+
+  constructor(
+    message = "Не удалось передать файл модели. Выберите модель с поддержкой изображений или приложите текстовый файл.",
+  ) {
+    super(message)
+    this.name = "AttachmentPromptError"
+  }
 }
 
 /** Fresh session per call: the constructor and course mentor never share context. */
@@ -209,12 +227,21 @@ export async function generateWithAgent(input: GenerateWithAgentInput): Promise<
     reasoning,
   )
   try {
-    return await opencodeReply(
-      sessionId,
-      opencodePrompt(input.prompt, input.system),
-      input.attachments,
-      AbortSignal.timeout(timeoutMs),
-    )
+    try {
+      return await opencodeReply(
+        sessionId,
+        opencodePrompt(input.prompt, input.system),
+        input.attachments,
+        AbortSignal.timeout(timeoutMs),
+      )
+    } catch (error) {
+      if (input.attachments?.length && !(error instanceof Error && error.name === "TimeoutError")) {
+        throw new AttachmentPromptError(
+          "Не удалось передать изображение модели. Выберите модель с поддержкой изображений.",
+        )
+      }
+      throw error
+    }
   } finally {
     await deleteMentorSession(sessionId).catch(() => {})
   }

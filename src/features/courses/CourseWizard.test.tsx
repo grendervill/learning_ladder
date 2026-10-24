@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, screen } from "@testing-library/react"
+import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { CourseWizard } from "./CourseWizard"
 import { renderWithProviders } from "../../test/render"
@@ -81,5 +81,22 @@ describe("CourseWizard", () => {
         { question: "Какой уровень?", answer: "С нуля" },
       ],
     })
+  })
+
+  it("deletes unsent attachments when the wizard closes", async () => {
+    const onClose = vi.fn()
+    renderWithProviders(<CourseWizard open onClose={onClose} />)
+    fireEvent.change(screen.getByLabelText("Выбрать файлы"), {
+      target: { files: [new File(["Hello notes"], "notes.txt", { type: "text/plain" })] },
+    })
+    expect(await screen.findByText("notes.txt")).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Закрыть мастер" }))
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled())
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/attachments/attachment-1",
+      expect.objectContaining({ method: "DELETE" }),
+    )
   })
 })

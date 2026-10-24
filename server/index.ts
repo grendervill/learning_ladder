@@ -2,6 +2,7 @@ import { createServer, type Server } from "node:http"
 import { resolve } from "node:path"
 import type { FSWatcher } from "chokidar"
 import { createApp } from "./app"
+import { cleanupExpiredAttachments } from "./attachments/store"
 import { defaultContext, type AppContext } from "./context"
 import { classifyAndApply } from "./content/classify"
 import { startContentWatcher } from "./content/watcher"
@@ -10,6 +11,7 @@ import { attachLspServer } from "./lsp/server"
 import { getMentorService } from "./mentor/service"
 import { createProjectManager, type ProjectManager } from "./project-controller"
 import {
+  isForeignAbsolutePath,
   projectRootCandidates,
   readConfiguredProjectRoot,
   resolveUsableProjectRoot,
@@ -27,11 +29,14 @@ export async function startServer(port = DEFAULT_PORT): Promise<Server> {
     projectRootCandidates(fallbackProjectRoot, configuredRoot),
   )
   const projectRoot = resolved.root
-  const fallbackError = resolved.error
-    ? `Сохранённая папка ${configuredRoot} недоступна: ${resolved.error}`
-    : projectRoot !== configuredRoot
-      ? `Сохранённая папка ${configuredRoot} недоступна; используется ${projectRoot}`
-      : undefined
+  const foreignRoot = isForeignAbsolutePath(configuredRoot)
+  const fallbackError = foreignRoot
+    ? `Сохранённая папка ${configuredRoot} относится к другой ОС; используется ${projectRoot}`
+    : resolved.error
+      ? `Сохранённая папка ${configuredRoot} недоступна: ${resolved.error}`
+      : projectRoot !== configuredRoot
+        ? `Сохранённая папка ${configuredRoot} недоступна; используется ${projectRoot}`
+        : undefined
   const projectState: ProjectStatus = {
     defaultRoot: fallbackProjectRoot,
     activeRoot: projectRoot,
@@ -39,6 +44,8 @@ export async function startServer(port = DEFAULT_PORT): Promise<Server> {
     ...(fallbackError ? { fallbackError } : {}),
   }
   if (fallbackError) console.error(`[project] ${fallbackError}`)
+  const removed = cleanupExpiredAttachments(projectRoot)
+  if (removed > 0) console.log(`[attachments] удалено временных наборов: ${removed}`)
   if (resolve(projectRoot) !== resolve(process.cwd())) {
     process.chdir(projectRoot)
   }
@@ -77,6 +84,8 @@ export async function startServer(port = DEFAULT_PORT): Promise<Server> {
       projectState.activeRoot = context.root ?? process.cwd()
       projectState.configuredRoot = projectState.activeRoot
       delete projectState.fallbackError
+      const removed = cleanupExpiredAttachments(projectState.activeRoot)
+      if (removed > 0) console.log(`[attachments] удалено временных наборов: ${removed}`)
       emitEvent("project:changed", { root: context.root ?? process.cwd() })
       emitEvent("course:changed", { version: context.getCourse().version })
     },

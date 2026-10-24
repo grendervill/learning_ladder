@@ -13,6 +13,7 @@ import { AttachmentError, type StoredAttachment } from "../attachments/types"
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: MAX_FILE_SIZE, files: MAX_FILES },
+  defParamCharset: "utf8",
 })
 
 function publicAttachment(attachment: StoredAttachment) {

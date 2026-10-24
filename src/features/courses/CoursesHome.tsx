@@ -112,6 +112,19 @@ export function CoursesHome() {
         {!courses.isLoading && <span className="courses-count">{countLabel}</span>}
       </div>
 
+      {project.data?.fallbackError && (
+        <div className="courses-error" role="status">
+          <p>{project.data.fallbackError}</p>
+          <button
+            type="button"
+            className="courses-button"
+            onClick={() => navigate("/settings?tab=project")}
+          >
+            Настройки папки
+          </button>
+        </div>
+      )}
+
       {courses.isError && (
         <div className="courses-error">
           <p>Не удалось загрузить курсы.</p>

@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest"
 import { createApp } from "../app"
 import { createAttachment } from "../attachments/store"
 import { migrate, openDatabase } from "../db"
+import { AttachmentPromptError } from "../mentor/client"
 import type { MentorService } from "../mentor/service"
 import type { CourseSnapshot, LessonContent } from "../content/types"
 
@@ -58,10 +59,14 @@ const PNG = Buffer.from(
   "base64",
 )
 
-function makeApp(root = process.cwd()) {
+function makeApp(root = process.cwd(), askMentorImpl?: MentorService["askMentor"]) {
   const db = openDatabase(":memory:")
   migrate(db)
-  const askMentor = vi.fn(async (_sessionId: string, _context: unknown, _question: string) => "Попробуй проверить type(42) в REPL.")
+  const askMentor = vi.fn(
+    askMentorImpl ??
+      (async (_sessionId: string, _context: unknown, _question: string) =>
+        "Попробуй проверить type(42) в REPL."),
+  )
   const mentor: MentorService = {
     createSession: async () => "m",
     deleteSession: async () => {},
@@ -226,6 +231,28 @@ describe("mentor ask api", () => {
     } finally {
       if (previous === undefined) delete process.env.LEARNINGLUA_SETTINGS_PATH
       else process.env.LEARNINGLUA_SETTINGS_PATH = previous
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it("returns a clear error when the model rejects an attachment", async () => {
+    const root = mkdtempSync(join(tmpdir(), "ladder-mentor-attachments-"))
+    try {
+      const attachment = await createAttachment(root, {
+        originalname: "chart.png",
+        mimetype: "image/png",
+        size: PNG.length,
+        buffer: PNG,
+      })
+      const { app } = makeApp(root, async () => {
+        throw new AttachmentPromptError()
+      })
+      const response = await request(app)
+        .post("/api/mentor/ask")
+        .send({ question: "Что на картинке?", attachmentIds: [attachment.id] })
+      expect(response.status).toBe(400)
+      expect(response.body.error).toBe("attachments_unsupported")
+    } finally {
       rmSync(root, { recursive: true, force: true })
     }
   })

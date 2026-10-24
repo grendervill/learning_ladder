@@ -100,6 +100,18 @@ describe("attachment store", () => {
     ).rejects.toMatchObject({ code: "file_too_large" })
   })
 
+  it("rejects corrupt documents and fake images", async () => {
+    await expect(
+      createAttachment(root, upload("broken.pdf", "application/pdf", "not a pdf")),
+    ).rejects.toMatchObject({ code: "unreadable_file" })
+    await expect(
+      createAttachment(root, upload("broken.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "not a docx")),
+    ).rejects.toMatchObject({ code: "unreadable_file" })
+    await expect(
+      createAttachment(root, upload("weird.png", "image/png", "not a png")),
+    ).rejects.toMatchObject({ code: "unreadable_file" })
+  })
+
   it("copies kept course materials and removes the temporary copy", async () => {
     const attachment = await createAttachment(root, upload("notes.md", "text/markdown", "Hello"))
 

@@ -96,6 +96,35 @@ describe("CoursesHome", () => {
     await waitFor(() => expect(screen.queryByRole("heading", { name: "Lua" })).not.toBeInTheDocument())
   })
 
+  it("shows the project fallback warning", async () => {
+    courses = []
+    total = 0
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: any) => {
+        const url = new URL(String(input), "http://localhost")
+        if (url.pathname === "/api/project") {
+          return response({
+            root: "/tmp/fallback",
+            courses: 0,
+            exists: true,
+            writable: true,
+            defaultRoot: "/tmp/default",
+            isDefault: false,
+            fallbackError: "Сохранённая папка недоступна",
+          })
+        }
+        if (url.pathname === "/api/courses") {
+          return response({ courses: [], total: 0, page: 1, pageSize: 25, pages: 0 })
+        }
+        return response({})
+      }),
+    )
+    renderWithProviders(<CoursesHome />)
+    expect(await screen.findByText("Сохранённая папка недоступна")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Настройки папки" })).toBeInTheDocument()
+  })
+
   it("shows the project path when there are no courses", async () => {
     courses = []
     total = 0

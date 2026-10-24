@@ -28,6 +28,22 @@ describe("migrate", () => {
     )
   })
 
+  it("adds attachments_json to an old mentor_messages table", () => {
+    const db = openDatabase(":memory:")
+    db.exec(`
+      CREATE TABLE mentor_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id TEXT NOT NULL,
+        role TEXT NOT NULL,
+        content_md TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    `)
+    migrate(db)
+    const columns = db.prepare("pragma table_info(mentor_messages)").all() as Array<{ name: string }>
+    expect(columns.some((column) => column.name === "attachments_json")).toBe(true)
+  })
+
   it("enables foreign keys", () => {
     const db = openDatabase(":memory:")
     migrate(db)

@@ -6,6 +6,7 @@ import { closeDb } from "./db"
 import {
   appConfigPath,
   ensureProjectLayout,
+  isForeignAbsolutePath,
   migrateLegacyLua,
   projectRootCandidates,
   readConfiguredProjectRoot,
@@ -61,6 +62,22 @@ describe("project root candidates", () => {
     expect(candidates).toContain(resolve(join(homedir(), "Лестница обучения")))
     expect(candidates).toContain(resolve(process.cwd()))
     expect(new Set(candidates).size).toBe(candidates.length)
+  })
+
+  it("detects paths from another operating system", () => {
+    expect(isForeignAbsolutePath("C:\\Users\\Vasya\\Documents", "darwin")).toBe(true)
+    expect(isForeignAbsolutePath("\\\\server\\share", "darwin")).toBe(true)
+    expect(isForeignAbsolutePath("/Users/alex/Documents", "darwin")).toBe(false)
+    expect(isForeignAbsolutePath("/Volumes/Samsung/projects", "win32")).toBe(true)
+    expect(isForeignAbsolutePath("C:\\Users\\Vasya\\Documents", "win32")).toBe(false)
+    expect(isForeignAbsolutePath("\\\\server\\share", "win32")).toBe(false)
+  })
+
+  it("skips a configured root from another OS", () => {
+    const fallback = join(dir, "fallback")
+    const candidates = projectRootCandidates(fallback, "C:\\Users\\Vasya\\Documents", "darwin")
+    expect(candidates[0]).toBe(resolve(fallback))
+    expect(candidates.some((path) => path.includes("C:\\Users"))).toBe(false)
   })
 
   it("uses the next candidate when the configured root cannot be opened", () => {

@@ -13,6 +13,7 @@ import { basename, extname, join } from "node:path"
 import {
   classifyUpload,
   extractAttachmentText,
+  hasImageSignature,
   MAX_FILE_SIZE,
   safeFileName,
 } from "./parse"
@@ -77,6 +78,12 @@ export async function createAttachment(root: string, file: UploadFile): Promise<
     )
   }
   const { kind, mime } = classifyUpload(file.originalname, file.mimetype)
+  if (kind === "image" && !hasImageSignature(file.buffer, mime)) {
+    throw new AttachmentError(
+      "unreadable_file",
+      "Файл не похож на изображение PNG, JPEG или WebP.",
+    )
+  }
   const id = randomUUID()
   const name = safeFileName(file.originalname)
   const dir = join(tmpRoot(root), id)

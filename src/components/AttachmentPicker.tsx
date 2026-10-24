@@ -21,6 +21,7 @@ export interface AttachmentPickerProps {
   compact?: boolean
   label?: string
   keepLabel?: string
+  keepHint?: string
   onBusyChange?: (busy: boolean) => void
 }
 
@@ -33,6 +34,7 @@ export function AttachmentPicker({
   compact = false,
   label = "Материалы",
   keepLabel = "Сохранить в папке проекта",
+  keepHint,
   onBusyChange,
 }: AttachmentPickerProps) {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -43,6 +45,7 @@ export function AttachmentPicker({
 
   async function addFiles(files: FileList | File[]) {
     const incoming = Array.from(files)
+    if (inputRef.current) inputRef.current.value = ""
     if (incoming.length === 0 || busy) return
     if (attachments.length + incoming.length > MAX_ATTACHMENT_FILES) {
       setError(`Можно приложить не больше ${MAX_ATTACHMENT_FILES} файлов.`)
@@ -178,7 +181,7 @@ export function AttachmentPicker({
           <b>{keepLabel}</b>
           <small>
             {keep
-              ? "Файлы останутся в папке проекта."
+              ? keepHint ?? "Файлы останутся в папке проекта после использования."
               : "Файлы удалятся после использования."}
           </small>
         </span>

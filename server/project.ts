@@ -108,7 +108,7 @@ export function readConfiguredProjectRoot(fallback: string): string {
   try {
     const parsed = JSON.parse(readFileSync(path, "utf8")) as { projectRoot?: unknown }
     if (typeof parsed.projectRoot === "string" && parsed.projectRoot.trim()) {
-      return resolve(parsed.projectRoot)
+      return parsed.projectRoot.trim()
     }
   } catch {
     // A damaged config should not make the app unstartable.
@@ -116,12 +116,29 @@ export function readConfiguredProjectRoot(fallback: string): string {
   return resolve(fallback)
 }
 
+/**
+ * A path saved on another OS must not be turned into a literal local folder
+ * (for example `C:\\Users\\...` on macOS or `/Volumes/...` on Windows).
+ */
+export function isForeignAbsolutePath(
+  path: string,
+  platform: NodeJS.Platform = process.platform,
+): boolean {
+  const value = path.trim()
+  if (!value) return false
+  if (platform === "win32") {
+    return value.startsWith("/") && !value.startsWith("//")
+  }
+  return /^[A-Za-z]:[\\/]/.test(value) || value.startsWith("\\\\")
+}
+
 export function projectRootCandidates(
   fallback: string,
   configured = readConfiguredProjectRoot(fallback),
+  platform: NodeJS.Platform = process.platform,
 ): string[] {
   const candidates = [
-    configured,
+    ...(isForeignAbsolutePath(configured, platform) ? [] : [configured]),
     fallback,
     join(homedir(), "Лестница обучения"),
     process.cwd(),

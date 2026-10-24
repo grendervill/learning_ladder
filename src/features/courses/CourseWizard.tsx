@@ -13,6 +13,7 @@ import {
 } from "lucide-react"
 import { AttachmentPicker } from "../../components/AttachmentPicker"
 import { deleteAttachment, type UploadedAttachment } from "../../lib/attachments"
+import { ApiError } from "../../lib/api"
 import {
   cancelCourseJob,
   clarifyCourse,
@@ -91,13 +92,13 @@ export function CourseWizard({ open, onClose }: { open: boolean; onClose: () => 
   const canClose = step !== "generate" || Boolean(error) || terminal
 
   const closeWizard = useCallback(() => {
-    if (!job?.courseId) {
+    if (job?.status !== "done") {
       for (const attachment of attachments) {
         void deleteAttachment(attachment.id)
       }
     }
     onClose()
-  }, [attachments, job?.courseId, onClose])
+  }, [attachments, job?.status, onClose])
 
   useEffect(() => {
     if (!open) return
@@ -175,7 +176,12 @@ export function CourseWizard({ open, onClose }: { open: boolean; onClose: () => 
         setQuestions(LOCAL_FALLBACK_QUESTIONS)
         setFallback(true)
       }
-    } catch {
+    } catch (cause) {
+      if (cause instanceof ApiError && cause.code === "model_without_vision") {
+        setError(cause.message)
+        setStep("topic")
+        return
+      }
       setQuestions(LOCAL_FALLBACK_QUESTIONS)
       setFallback(true)
     } finally {
@@ -313,7 +319,10 @@ export function CourseWizard({ open, onClose }: { open: boolean; onClose: () => 
                 className="wizard-textarea"
                 autoFocus
                 value={topic}
-                onChange={(event) => setTopic(event.target.value)}
+                onChange={(event) => {
+                  setTopic(event.target.value)
+                  setError(null)
+                }}
                 placeholder="Например: хочу разобраться в экономике и научиться читать новости про инфляцию и ставки"
                 rows={4}
               />
@@ -333,18 +342,31 @@ export function CourseWizard({ open, onClose }: { open: boolean; onClose: () => 
             <div className="wizard-attachments">
               <AttachmentPicker
                 attachments={attachments}
-                onChange={setAttachments}
+                onChange={(next) => {
+                  setAttachments(next)
+                  setError(null)
+                }}
                 keep={keepAttachments}
                 onKeepChange={setKeepAttachments}
                 onBusyChange={setAttachmentsBusy}
                 label="Материалы для курса"
                 keepLabel="Сохранить исходники в курсе"
+                keepHint="Исходники останутся в курсе после успешной сборки."
               />
             </div>
             <p className="wizard-hint">
               Чем конкретнее запрос, тем точнее курс. Если не знаете, с чего начать,
               напишите тему — конструктор предложит варианты.
             </p>
+            {error && (
+              <div className="wizard-error">
+                <TriangleAlert size={18} aria-hidden />
+                <div>
+                  <b>Не удалось продолжить</b>
+                  <p>{error}</p>
+                </div>
+              </div>
+            )}
             <div className="wizard-actions">
               <button
                 type="button"
