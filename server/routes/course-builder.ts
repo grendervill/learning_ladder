@@ -88,10 +88,6 @@ export function createCourseBuilderRouter(
       res.json({ questions })
     } catch (error) {
       if (attachmentError(res, error)) return
-      if (error instanceof Error && error.message === "model_without_vision") {
-        res.status(400).json({ error: "model_without_vision", message: error.message })
-        return
-      }
       res.json({ ...FALLBACK_CLARIFY, fallback: true })
     }
   })

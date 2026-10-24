@@ -239,17 +239,17 @@ describe("mentor ask api", () => {
     const root = mkdtempSync(join(tmpdir(), "ladder-mentor-attachments-"))
     try {
       const attachment = await createAttachment(root, {
-        originalname: "chart.png",
-        mimetype: "image/png",
-        size: PNG.length,
-        buffer: PNG,
+        originalname: "notes.txt",
+        mimetype: "text/plain",
+        size: 5,
+        buffer: Buffer.from("Hello"),
       })
       const { app } = makeApp(root, async () => {
         throw new AttachmentPromptError()
       })
       const response = await request(app)
         .post("/api/mentor/ask")
-        .send({ question: "Что на картинке?", attachmentIds: [attachment.id] })
+        .send({ question: "Что в файле?", attachmentIds: [attachment.id] })
       expect(response.status).toBe(400)
       expect(response.body.error).toBe("attachments_unsupported")
     } finally {
